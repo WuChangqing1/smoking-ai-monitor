@@ -460,6 +460,42 @@ class TestAlarmGeneration:
         stages = [entry["stage"] for entry in record.timeline]
         assert stages == ["发现", "判断", "报警", "处理", "归档"]
 
+    def test_system_generated_alarm_is_classified_by_symptom(self) -> None:
+        """系统自动生成的报警应按主导特征分类，而不是一律记成物料堆积。"""
+        engine = make_engine()
+        engine.reset()
+        engine.set_scenario("alarm")
+        drive(engine, 60)
+
+        # 报警阶段测距已远低于基准 → 应判为物料堆积
+        assert engine.alarms()[0].event_type == "material_accumulation"
+
+    def test_classify_event_distinguishes_wear_patterns(self) -> None:
+        """分类函数必须能区分三种工况，否则溯源筛选会退化。"""
+        engine = make_engine()
+        latest = engine.recent_samples(1)[0]
+
+        def make_sample(**overrides):
+            from dataclasses import replace
+
+            return replace(latest, **overrides)
+
+        # 测距远低于基准 → 物料堆积
+        assert (
+            engine._classify_event(make_sample(radar_filtered=0.60, conveyor_speed=1.10))
+            == "material_accumulation"
+        )
+        # 测距正常但速度明显下降 → 输送速度下降
+        assert (
+            engine._classify_event(make_sample(radar_filtered=0.72, conveyor_speed=1.05))
+            == "conveyor_speed_drop"
+        )
+        # 测距与速度都正常 → 物料流量波动
+        assert (
+            engine._classify_event(make_sample(radar_filtered=0.72, conveyor_speed=1.20))
+            == "material_flow_fluctuation"
+        )
+
     def test_normal_scenario_does_not_generate_alarms(self) -> None:
         """正常演示时应以正常运行状态为主，不频繁报警。"""
         engine = make_engine()

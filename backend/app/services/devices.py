@@ -32,12 +32,44 @@ RADAR_POINTS: tuple[int, ...] = (1, 2, 3)
 PRIMARY_POINT = 2
 
 
+#: 雷达点位 IP 基址：点位 2（主监控点）对应 192.168.1.198，与原始资料报警记录一致
+_RADAR_IP_BASE = 196
+
+
+def radar_device_id(position: int) -> str:
+    return f"RAD-{position:02d}"
+
+
+def radar_device_name(position: int) -> str:
+    return f"制丝线 {position} 号工位雷达"
+
+
+def radar_device_ip(position: int) -> str:
+    return f"192.168.1.{_RADAR_IP_BASE + position}"
+
+
+def device_of_position(position: int) -> tuple[str, str, str, str]:
+    """按点位返回 (device_id, device_name, device_ip, location)。
+
+    非雷达点位（4~7，仅摄像头）回退到最近具备雷达的点位，
+    以保证对外给出的 device_id 始终是真实存在的设备编号。
+    """
+    if position not in RADAR_POINTS:
+        position = RADAR_POINTS[0]
+    return (
+        radar_device_id(position),
+        radar_device_name(position),
+        radar_device_ip(position),
+        POINT_LOCATIONS[position],
+    )
+
+
 def _radar_device(position: int, index: int) -> dict:
     # 点位 2（主监控点）对应 192.168.1.198 —— 与原始资料中的报警 IP 一致
-    ip = f"192.168.1.{196 + position}"
+    ip = radar_device_ip(position)
     return {
-        "id": f"RAD-{position:02d}",
-        "name": f"制丝线 {position} 号工位雷达",
+        "id": radar_device_id(position),
+        "name": radar_device_name(position),
         "kind": "radar",
         "model": "重邮自研 ToF 激光雷达",
         "vendor": "重庆邮电大学",
@@ -83,7 +115,6 @@ def build_devices() -> list[dict]:
     """构造 18 台设备的台账（3 雷达 + 15 摄像机）。"""
     devices: list[dict] = []
 
-    # 3 台激光雷达 → 点位 1~3
     for position in RADAR_POINTS:
         devices.append(_radar_device(position, index=position))
 

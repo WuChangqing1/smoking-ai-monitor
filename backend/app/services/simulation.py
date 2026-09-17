@@ -231,13 +231,18 @@ class SimulationEngine:
         """预置若干条历史报警记录。
 
         数据取自原始验收资料中的真实事件（2025-05-19 加料堵料、
-        2025-05-17 物料堆积报警），保证"历史报警"页面开局就有可信内容，
-        而不是空表或编造的假数据。
+        2025-05-17 物料堆积报警），并覆盖多个点位与异常类型，
+        使"设备 / 异常类型 / 等级"等溯源维度都有真实可筛的数据，
+        而不是全部堆在同一台设备上。
         """
+        from app.services.devices import POINT_LOCATIONS, RADAR_POINTS, device_of_position
+
         now = datetime.now()
-        samples: list[tuple[datetime, float, str, str, float, str]] = [
+        # (时间偏移, 点位, 测距, 异常类型, 联合结果, 视觉置信度, 处理说明)
+        samples: list[tuple[timedelta, int, float, str, str, float, str]] = [
             (
-                now - timedelta(hours=2, minutes=14),
+                timedelta(hours=2, minutes=14),
+                2,
                 ALARM_THRESHOLD,
                 "material_accumulation",
                 "alarm",
@@ -245,7 +250,8 @@ class SimulationEngine:
                 "现场确认进料量短时间升高，同时下游输送速度降低；降低上游进料量并检查输送设备，约 4 分钟后物料恢复正常。",
             ),
             (
-                now - timedelta(days=1, hours=5),
+                timedelta(days=1, hours=5),
+                2,
                 0.61,
                 "material_accumulation",
                 "warning",
@@ -253,34 +259,63 @@ class SimulationEngine:
                 "物料覆盖率短时上升，巡检确认输送带无堵料，属进料波动，持续观察后自行恢复。",
             ),
             (
-                now - timedelta(days=3, hours=1, minutes=26),
+                timedelta(days=3, hours=1, minutes=26),
+                1,
                 0.59,
                 "material_accumulation",
                 "alarm",
                 0.91,
-                "清理 2 号输送段落料口积料，调整上游喂料机频率后恢复。",
+                "清理 1 号输送段落料口积料，调整上游喂料机频率后恢复。",
             ),
             (
-                now - timedelta(days=6, hours=8),
+                timedelta(days=6, hours=8),
+                3,
                 0.63,
                 "conveyor_speed_drop",
                 "warning",
                 0.79,
                 "输送速度短时下降约 8%，检查变频器参数无误，判定为物料负载波动。",
             ),
+            (
+                timedelta(days=8, hours=3, minutes=12),
+                1,
+                0.66,
+                "material_flow_fluctuation",
+                "warning",
+                0.82,
+                "测距呈周期性波动，与上游喂料机给料节拍一致；调整给料频率后波动收窄。",
+            ),
+            (
+                timedelta(days=11, hours=6),
+                3,
+                0.68,
+                "radar_refresh_abnormal",
+                "warning",
+                0.90,
+                "雷达数据刷新短时中断约 4 秒，重启采集服务后恢复，期间未影响生产。",
+            ),
         ]
 
-        for ts_base, distance, event_type, verdict, confidence, resolution in samples:
+        for offset, position, distance, event_type, verdict, confidence, resolution in samples:
+            # 雷达点位之外的异常（例如仅摄像头的点位）归到最近的雷达台账上，
+            # 保证 device_id 始终是真实存在的设备编号
+            if position not in RADAR_POINTS:
+                position = RADAR_POINTS[0]
+
+            device_id, device_name, device_ip, location = device_of_position(position)
             self._alarm_seq += 1
-            severity = self._severity_for_distance(distance)
             record = self._build_alarm(
-                ts=ts_base.timestamp(),
-                severity=severity,
+                ts=(now - offset).timestamp(),
+                severity=self._severity_for_distance(distance),
                 distance=distance,
                 event_type=event_type,
                 verdict=verdict,  # type: ignore[arg-type]
                 confidence=confidence,
                 resolution=resolution,
+                device_id=device_id,
+                device_name=device_name,
+                device_ip=device_ip,
+                location=location,
             )
             record.handling_status = "archived"
             record.operator = "制丝车间值班员"
@@ -605,6 +640,23 @@ class SimulationEngine:
 
     # ---- 事件（预警计数 / 报警生成）------------------------------------------
 
+    def _classify_event(self, sample: SimSample) -> str:
+        """按主导特征判定异常类型，而不是一律记成"物料堆积"。
+
+        判断顺序体现的是排查优先级：
+          1. 测距已明显低于基准 → 物料堆积（几何量证据最直接）
+          2. 测距正常但输送速度明显下降 → 输送速度下降
+          3. 测距正常、速度正常，仅覆盖率偏高 → 物料流量波动
+        """
+        delta = sample.radar_filtered - BASELINE_DISTANCE
+        speed_drop = (CONVEYOR_BASE_SPEED - sample.conveyor_speed) / CONVEYOR_BASE_SPEED
+
+        if delta <= -0.06:
+            return "material_accumulation"
+        if speed_drop >= 0.07:
+            return "conveyor_speed_drop"
+        return "material_flow_fluctuation"
+
     def _evaluate_events(self, sample: SimSample) -> None:
         distance = sample.radar_filtered
         fusion, _ = self._fuse(distance, sample.severity, sample.vision_confidence)
@@ -628,7 +680,7 @@ class SimulationEngine:
                     ts=datetime.now().timestamp(),
                     severity=sample.severity,
                     distance=distance,
-                    event_type="material_accumulation",
+                    event_type=self._classify_event(sample),
                     verdict=fusion,
                     confidence=sample.vision_confidence,
                     resolution="",
@@ -647,6 +699,10 @@ class SimulationEngine:
         confidence: float,
         resolution: str,
         coverage: float | None = None,
+        device_id: str | None = None,
+        device_name: str | None = None,
+        device_ip: str | None = None,
+        location: str | None = None,
     ) -> AlarmRecordData:
         moment = datetime.fromtimestamp(ts)
         event_id = f"EVT-{moment.strftime('%Y%m%d')}-{self._alarm_seq:02d}"
@@ -699,10 +755,10 @@ class SimulationEngine:
 
         return AlarmRecordData(
             event_id=event_id,
-            device_id=PRIMARY_DEVICE_ID,
-            device_name=PRIMARY_DEVICE_NAME,
-            device_ip=PRIMARY_DEVICE_IP,
-            location=PRIMARY_LOCATION,
+            device_id=device_id or PRIMARY_DEVICE_ID,
+            device_name=device_name or PRIMARY_DEVICE_NAME,
+            device_ip=device_ip or PRIMARY_DEVICE_IP,
+            location=location or PRIMARY_LOCATION,
             timestamp=ts,
             radar_distance=round(distance, 3),
             baseline_distance=BASELINE_DISTANCE,

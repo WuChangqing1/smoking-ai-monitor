@@ -1,0 +1,138 @@
+/* ==========================================================================
+   模态窗
+   ========================================================================== */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-6);
+  background: rgba(31, 42, 46, 0.42);
+  animation: modal-fade 0.14s ease-out;
+  overflow-y: auto;
+}
+
+@keyframes modal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal__panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: calc(100vh - var(--sp-8) * 2);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  box-shadow: 0 8px 32px rgba(31, 42, 46, 0.22);
+  outline: none;
+  animation: modal-rise 0.16s ease-out;
+}
+
+@keyframes modal-rise {
+  from {
+    transform: translateY(8px);
+    opacity: 0.6;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.modal__panel--md {
+  max-width: 620px;
+}
+
+.modal__panel--lg {
+  max-width: 1080px;
+}
+
+/* ---- 头部 ---- */
+.modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface-alt);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  flex-shrink: 0;
+}
+
+.modal__titles {
+  min-width: 0;
+}
+
+.modal__title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--c-text);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.modal__subtitle {
+  margin-top: 3px;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.modal__close {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--c-text-muted);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.modal__close:hover {
+  background: var(--c-critical-bg);
+  border-color: #e8b4b4;
+  color: var(--c-critical);
+}
+
+/* ---- 内容 ---- */
+.modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--sp-5);
+}
+
+/* ---- 底部 ---- */
+.modal__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-5);
+  border-top: 1px solid var(--c-border);
+  background: var(--c-surface-alt);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .modal {
+    padding: var(--sp-3);
+  }
+  .modal__body {
+    padding: var(--sp-4);
+  }
+}

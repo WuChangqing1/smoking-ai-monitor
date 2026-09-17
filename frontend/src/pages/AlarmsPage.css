@@ -1,0 +1,190 @@
+/* ==========================================================================
+   异常报警页
+   ========================================================================== */
+
+.alarms {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* ---- 顶部标签页与概览 ---- */
+.alarms__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: 0 var(--sp-4);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-card);
+}
+
+.alarms__tabs {
+  display: flex;
+  gap: var(--sp-4);
+}
+
+.alarms__tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 44px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--c-text-sub);
+  font-size: var(--fs-md);
+}
+
+.alarms__tab:hover {
+  color: var(--c-text);
+}
+
+.alarms__tab.is-active {
+  border-bottom-color: var(--c-primary);
+  color: var(--c-text);
+  font-weight: 600;
+}
+
+.alarms__tab-badge {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--c-warning);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 17px;
+  text-align: center;
+}
+
+.alarms__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.alarms__summary strong {
+  font-family: var(--font-mono);
+  color: var(--c-text);
+}
+
+.alarms__refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text-sub);
+  font-size: var(--fs-sm);
+}
+
+.alarms__refresh:hover {
+  background: var(--c-surface-alt);
+  border-color: var(--c-text-muted);
+  color: var(--c-text);
+}
+
+/* ---- 数据中断提示 ---- */
+.alarms__stale {
+  padding: 7px var(--sp-4);
+  border: 1px solid #ecc9a0;
+  border-left: 3px solid var(--c-warning);
+  border-radius: var(--r-sm);
+  background: var(--c-warning-bg);
+  color: #a35c05;
+  font-size: var(--fs-sm);
+}
+
+/* ---- 骨架 ---- */
+.alarms__loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+}
+
+/* ---- 表格 ---- */
+.alarms__table-wrap {
+  overflow-x: auto;
+}
+
+.alarms__table {
+  font-size: var(--fs-sm);
+  min-width: 1180px;
+}
+
+.alarms__table th,
+.alarms__table td {
+  padding: 9px var(--sp-3);
+  white-space: nowrap;
+}
+
+.alarms__cell-code {
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.alarms__row {
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.alarms__row:hover {
+  background: #f7fafb;
+}
+
+.alarms__row:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: -2px;
+}
+
+/* 等级色条：只在行首用一条细线区分，不做整行染色 */
+.alarms__row td:first-child {
+  position: relative;
+  padding-left: var(--sp-4);
+}
+
+.alarms__row td:first-child::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 3px;
+  border-radius: 1px;
+  background: transparent;
+}
+
+.alarms__row--info td:first-child::before {
+  background: var(--c-info);
+}
+
+.alarms__row--warning td:first-child::before {
+  background: var(--c-warning);
+}
+
+.alarms__row--critical td:first-child::before {
+  background: var(--c-critical);
+}
+
+@media (max-width: 720px) {
+  .alarms__bar {
+    padding: var(--sp-2) var(--sp-3);
+  }
+  .alarms__tabs {
+    gap: var(--sp-3);
+  }
+}

@@ -98,6 +98,33 @@ VISION_LABEL_TEXT: dict[str, str] = {
     "material_accumulation_severe": "物料堆积（严重）",
 }
 
+#: 异常类型代码 → 中文描述。对外统一返回中文，避免前端散落翻译表。
+EVENT_TYPE_TEXT: dict[str, str] = {
+    "material_accumulation": "物料堆积",
+    "conveyor_speed_drop": "输送速度下降",
+    "material_flow_fluctuation": "物料流量波动",
+    "personnel_intrusion": "人员进入检测区",
+    "radar_refresh_abnormal": "雷达刷新异常",
+    "vision_confidence_drop": "视觉置信度下降",
+}
+
+#: 异常类型代码 → 处理建议用的简称，供数据溯源筛选下拉使用
+EVENT_TYPE_OPTIONS: tuple[tuple[str, str], ...] = tuple(EVENT_TYPE_TEXT.items())
+
+
+def event_type_text(code: str) -> str:
+    """异常类型代码转中文；未登记的代码原样返回，避免静默丢信息。"""
+    return EVENT_TYPE_TEXT.get(code, code)
+
+
+#: 处理措施/经验库中出现的异常类型（用于溯源筛选下拉，来自知识库种子数据）
+TRACE_EVENT_TYPES: tuple[str, ...] = (
+    "物料堆积",
+    "输送速度下降",
+    "物料流量波动",
+    "人员进入检测区",
+)
+
 
 def risk_level_of(index: float) -> RiskLevel:
     """风险指数 → 风险等级。"""

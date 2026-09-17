@@ -204,6 +204,7 @@ class AlarmOut(BaseModel):
     device_ip: str
     location: str
     event_type: str
+    event_type_text: str = Field(description="异常类型中文描述，供界面直接展示")
     level: AlarmLevelT
     level_text: str
     radar_value: float | None

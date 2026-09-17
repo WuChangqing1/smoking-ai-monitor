@@ -230,13 +230,16 @@ export interface AlarmRecord {
   id: string
   /** 报警编号，例如 ALM-20250519-1334 */
   code: string
-  ts: string
+  /** Unix 时间戳（秒） */
+  ts: number
   device_id: string
   device_name: string
   device_ip: string
   location: string
-  /** 异常类型，例如 物料堆积 */
+  /** 异常类型代码，例如 material_accumulation */
   event_type: string
+  /** 异常类型中文描述（后端提供，前端不翻译） */
+  event_type_text: string
   level: AlarmLevel
   level_text: string
   radar_value: number | null
@@ -250,6 +253,8 @@ export interface AlarmRecord {
 
 /** 报警详情 GET /api/alarms/{id} —— 发现→判断→报警→处理→归档 闭环 */
 export interface AlarmDetail extends AlarmRecord {
+  /** 基准距离 (m) */
+  baseline_distance: number
   /** 当时监控画面（静态图或视频帧） */
   snapshot: string | null
   /** 雷达趋势（用于详情页图表） */
@@ -332,10 +337,18 @@ export interface TraceQuery {
   date_to?: string
   device_id?: string
   event_type?: string
-  level?: RiskLevel
+  level?: AlarmLevel
   status?: AlarmStatus
   page?: number
   page_size?: number
+}
+
+/** 报警筛选选项 GET /api/alarms/options */
+export interface AlarmFilterOptions {
+  levels: Array<{ value: AlarmLevel; label: string }>
+  statuses: Array<{ value: AlarmStatus; label: string }>
+  devices: Array<{ value: string; label: string }>
+  event_types: Array<{ value: string; label: string }>
 }
 
 /** 分页结果 */

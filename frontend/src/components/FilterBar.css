@@ -1,0 +1,122 @@
+/* ==========================================================================
+   筛选条
+   ========================================================================== */
+
+.filter-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--sp-4);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-card);
+}
+
+.filter-bar__fields {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.filter-bar__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.filter-bar__label {
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+.filter-bar__control {
+  height: 30px;
+  min-width: 128px;
+  padding: 0 8px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-family: inherit;
+  font-size: var(--fs-base);
+}
+
+.filter-bar__control:hover {
+  border-color: var(--c-text-muted);
+}
+
+.filter-bar__control:focus {
+  border-color: var(--c-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--c-primary-light);
+}
+
+select.filter-bar__control {
+  cursor: pointer;
+  /* 让下拉箭头不至于贴边 */
+  padding-right: 4px;
+}
+
+input[type='date'].filter-bar__control {
+  font-family: var(--font-mono);
+}
+
+.filter-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-shrink: 0;
+  padding-bottom: 1px;
+}
+
+.filter-bar__extra {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+.filter-bar__extra strong {
+  font-family: var(--font-mono);
+  color: var(--c-text);
+}
+
+.filter-bar__reset {
+  height: 30px;
+  padding: 0 13px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text-sub);
+  font-size: var(--fs-base);
+}
+
+.filter-bar__reset:hover:not(:disabled) {
+  background: var(--c-surface-alt);
+  border-color: var(--c-text-muted);
+  color: var(--c-text);
+}
+
+.filter-bar__reset:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-bar__actions {
+    justify-content: space-between;
+  }
+  .filter-bar__control {
+    min-width: 108px;
+  }
+}

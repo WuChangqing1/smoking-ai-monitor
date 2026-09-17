@@ -15,6 +15,7 @@ from app.services.models import (
     ALARM_LEVEL_TEXT,
     ALARM_STATUS_TEXT,
     AlarmRecordData,
+    event_type_text,
 )
 from app.services.simulation import get_engine
 
@@ -22,7 +23,6 @@ router = APIRouter(prefix="/api", tags=["alarms"])
 
 
 def _alarm_out(record: AlarmRecordData) -> AlarmOut:
-    risk_level = ALARM_LEVEL_TEXT[record.alarm_level]
     return AlarmOut(
         id=record.event_id,
         code=record.event_id,
@@ -32,8 +32,9 @@ def _alarm_out(record: AlarmRecordData) -> AlarmOut:
         device_ip=record.device_ip,
         location=record.location,
         event_type=record.event_type,
+        event_type_text=event_type_text(record.event_type),
         level=record.alarm_level,
-        level_text=risk_level,
+        level_text=ALARM_LEVEL_TEXT[record.alarm_level],
         radar_value=record.radar_distance,
         vision_result=record.visual_result,
         fusion_result=record.fusion_result,
@@ -97,6 +98,42 @@ def alarms(
     )
 
 
+@router.get("/alarms/options", summary="报警筛选选项")
+def alarm_options() -> dict:
+    """数据溯源筛选下拉的选项来源。
+
+    选项取自后端实际存在的数据 + 原始资料口径的异常类型，
+    前端不硬编码，避免筛选值与数据不一致。
+
+    注意：本路由必须注册在 ``/alarms/{event_id}`` 之前，否则 "options"
+    会被当成 event_id 而报 404。
+    """
+    records = get_engine().alarms()
+
+    device_ids = sorted({r.device_id for r in records})
+    event_types = sorted({r.event_type for r in records})
+
+    return {
+        "levels": [
+            {"value": "info", "label": "提示"},
+            {"value": "warning", "label": "预警"},
+            {"value": "critical", "label": "严重"},
+        ],
+        "statuses": [
+            {"value": "pending", "label": "待处理"},
+            {"value": "processing", "label": "处理中"},
+            {"value": "resolved", "label": "已处理"},
+            {"value": "archived", "label": "已归档"},
+        ],
+        "devices": [
+            {"value": did, "label": did} for did in device_ids
+        ],
+        "event_types": [
+            {"value": code, "label": event_type_text(code)} for code in event_types
+        ],
+    }
+
+
 @router.get("/alarms/{event_id}", response_model=AlarmDetailOut, summary="报警详情")
 def alarm_detail(event_id: str) -> AlarmDetailOut:
     """报警详情：事件基本信息 + 当时监控画面 + 雷达趋势 + AI 判断 + 处理结果。
@@ -107,7 +144,6 @@ def alarm_detail(event_id: str) -> AlarmDetailOut:
     record = engine.alarm_by_id(event_id)
     if record is None:
         raise HTTPException(status_code=404, detail=f"未找到报警记录：{event_id}")
-
     # 雷达趋势：取当前滚动窗口的历史作为"当时的数据走向"
     from app.routers.realtime import _sample_out
 

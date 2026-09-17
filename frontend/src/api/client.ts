@@ -10,6 +10,7 @@
 
 import type {
   AlarmDetail,
+  AlarmFilterOptions,
   AlarmRecord,
   Device,
   KnowledgeEvent,
@@ -104,6 +105,9 @@ export const api = {
 
   /** 报警列表 */
   alarms: (query: TraceQuery = {}) => request<Paged<AlarmRecord>>(`/api/alarms${toQuery(query)}`),
+
+  /** 报警筛选选项（下拉数据源，避免前端硬编码） */
+  alarmOptions: () => request<AlarmFilterOptions>('/api/alarms/options'),
 
   /** 报警详情 */
   alarmDetail: (id: string) => request<AlarmDetail>(`/api/alarms/${encodeURIComponent(id)}`),

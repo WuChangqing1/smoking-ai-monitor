@@ -470,6 +470,61 @@ class TestAlarms:
     def test_alarm_detail_404(self, client: TestClient) -> None:
         assert client.get("/api/alarms/EVT-NOT-EXIST").status_code == 404
 
+    def test_event_type_has_chinese_label(self, client: TestClient) -> None:
+        """接口必须直接给出中文异常类型，前端不散落翻译表。"""
+        item = client.get("/api/alarms").json()["items"][0]
+        assert item["event_type"] == "material_accumulation"
+        assert item["event_type_text"] == "物料堆积"
+
+    def test_filter_options_endpoint(self, client: TestClient) -> None:
+        """筛选选项由后端提供，且与实际数据一致。"""
+        body = client.get("/api/alarms/options").json()
+
+        for key in ("levels", "statuses", "devices", "event_types"):
+            assert key in body, f"缺少筛选选项 {key}"
+            assert body[key], f"{key} 不应为空"
+
+        level_values = {o["value"] for o in body["levels"]}
+        assert level_values == {"info", "warning", "critical"}
+
+        status_values = {o["value"] for o in body["statuses"]}
+        assert status_values == {"pending", "processing", "resolved", "archived"}
+
+        # 事件类型选项必须是中文标签，且能被筛选接口接受
+        for option in body["event_types"]:
+            assert option["label"] and option["label"] != option["value"]
+            filtered = client.get(f"/api/alarms?event_type={option['value']}").json()
+            assert filtered["total"] >= 1, f"选项 {option['value']} 筛不出任何数据"
+
+    def test_options_route_not_shadowed_by_detail_route(self, client: TestClient) -> None:
+        """/api/alarms/options 不能被 /api/alarms/{event_id} 抢先匹配成 404。"""
+        assert client.get("/api/alarms/options").status_code == 200
+
+    def test_seed_history_covers_multiple_dimensions(self, client: TestClient) -> None:
+        """种子历史必须覆盖多个设备、多个异常类型与两个等级。
+
+        否则数据溯源页的筛选下拉会退化成只有一个选项，失去演示意义。
+        """
+        items = client.get("/api/alarms?page_size=100").json()["items"]
+
+        devices = {a["device_id"] for a in items}
+        assert len(devices) >= 3, f"历史报警应覆盖至少 3 台设备，实际 {devices}"
+
+        event_types = {a["event_type"] for a in items}
+        assert len(event_types) >= 3, f"应覆盖至少 3 种异常类型，实际 {event_types}"
+
+        levels = {a["level"] for a in items}
+        assert "critical" in levels and "warning" in levels
+
+        # 每条记录的 device_id 都应是台账中真实存在的设备
+        known = {d["id"] for d in client.get("/api/devices").json()}
+        assert devices <= known, f"存在台账外的设备编号: {devices - known}"
+
+    def test_device_filter_returns_only_that_device(self, client: TestClient) -> None:
+        for device_id in ("RAD-01", "RAD-02", "RAD-03"):
+            body = client.get(f"/api/alarms?device_id={device_id}").json()
+            assert all(a["device_id"] == device_id for a in body["items"])
+
 
 # =============================================================================
 # /api/prediction
