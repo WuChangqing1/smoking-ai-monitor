@@ -24,20 +24,28 @@ interface SettingsPageProps {
   offline: boolean
 }
 
-type ActionKey = 'start' | 'stop' | 'reset'
+type ActionKey = 'start' | 'stop' | 'reset' | 'scenario' | 'clear-scenario'
 
 interface Feedback {
   tone: 'ok' | 'error'
   text: string
 }
 
+/** 演示场景：与后端 POST /api/simulation/scenario/{scenario} 对应 */
+const SCENARIOS = [
+  { value: 'normal', label: '正常', tone: 'normal', desc: '距离贴近基准，风险低' },
+  { value: 'attention', label: '关注', tone: 'info', desc: '物料开始堆积，出现轻微趋势' },
+  { value: 'warning', label: '预警', tone: 'warning', desc: '风险明显升高，进入提前预警' },
+  { value: 'alarm', label: '异常', tone: 'critical', desc: '达到报警条件，生成报警记录' },
+] as const
+
 export default function SettingsPage({ status, meta, onChanged, offline }: SettingsPageProps) {
   const [busy, setBusy] = useState<ActionKey | null>(null)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
 
   const running = status?.detection_running ?? false
-  /** 后端启停接口尚未实现的标记：接口返回 404/405 时提示进入下一轮次 */
-  const notImplemented = '启停接口将在后端仿真引擎接入后生效（轮次 4）'
+  /** 接口缺失时的兜底提示（正常情况下后端已实现，仅用于版本不匹配的场景） */
+  const notImplemented = '后端未提供该控制接口，请确认后端版本与前端一致。'
 
   async function run(key: ActionKey) {
     setBusy(key)
@@ -56,6 +64,34 @@ export default function SettingsPage({ status, meta, onChanged, offline }: Setti
       const message = err instanceof Error ? err.message : '操作失败'
       const isMissing = /返回 (404|405)/.test(message)
       setFeedback({ tone: 'error', text: isMissing ? notImplemented : message })
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function applyScenario(scenario: (typeof SCENARIOS)[number]['value']) {
+    setBusy('scenario')
+    setFeedback(null)
+    try {
+      const result = await api.setScenario(scenario)
+      setFeedback({ tone: 'ok', text: result.message })
+      onChanged()
+    } catch (err) {
+      setFeedback({ tone: 'error', text: err instanceof Error ? err.message : '切换失败' })
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function clearScenario() {
+    setBusy('clear-scenario')
+    setFeedback(null)
+    try {
+      const result = await api.clearScenario()
+      setFeedback({ tone: 'ok', text: result.message })
+      onChanged()
+    } catch (err) {
+      setFeedback({ tone: 'error', text: err instanceof Error ? err.message : '恢复失败' })
     } finally {
       setBusy(null)
     }
@@ -154,6 +190,50 @@ export default function SettingsPage({ status, meta, onChanged, offline }: Setti
           )}
         </Panel>
       </div>
+
+      {/* ---- 演示模式（仅演示环境，刻意不放在主界面） ---- */}
+      <Panel
+        title="演示模式"
+        icon={<IconSettings size={14} />}
+        description="仅用于答辩前主动切换仿真状态以便录屏，正常演示时无需使用"
+      >
+        <div className="settings__demo">
+          <p className="settings__demo-hint">
+            系统默认按自动状态循环运行，<strong>大部分时间保持正常</strong>，报警不频繁。
+            需要演示特定场景时，可在此强制切换；点击「恢复自动循环」退出演示模式。
+          </p>
+
+          <div className="settings__scenarios">
+            {SCENARIOS.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                className={`settings__scenario is-${item.tone}`}
+                onClick={() => void applyScenario(item.value)}
+                disabled={busy !== null}
+              >
+                <span className="settings__scenario-label">{item.label}</span>
+                <span className="settings__scenario-desc">{item.desc}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="settings__demo-foot">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => void clearScenario()}
+              disabled={busy !== null}
+            >
+              <IconReset size={14} />
+              {busy === 'clear-scenario' ? '正在恢复…' : '恢复自动循环'}
+            </button>
+            <span className="settings__demo-state">
+              当前仿真状态：<strong>{status?.sim_state_text ?? '—'}</strong>
+            </span>
+          </div>
+        </div>
+      </Panel>
 
       {/* ---- 设备台账 ---- */}
       <Panel

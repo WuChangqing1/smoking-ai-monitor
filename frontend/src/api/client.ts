@@ -130,4 +130,20 @@ export const api = {
 
   /** 重置模拟 */
   simulationReset: () => request<{ ok: boolean; message: string }>('/api/simulation/reset', { method: 'POST' }),
+
+  /**
+   * 演示模式：强制进入指定仿真状态。
+   * 仅供答辩前录屏使用，刻意不放在主界面显眼位置。
+   */
+  setScenario: (scenario: 'normal' | 'attention' | 'warning' | 'alarm') =>
+    request<{ ok: boolean; message: string; sim_state: string }>(
+      `/api/simulation/scenario/${scenario}`,
+      { method: 'POST' },
+    ),
+
+  /** 退出演示模式，恢复自动状态循环 */
+  clearScenario: () =>
+    request<{ ok: boolean; message: string; sim_state: string }>('/api/simulation/scenario', {
+      method: 'POST',
+    }),
 }

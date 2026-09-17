@@ -130,6 +130,94 @@
   font-size: var(--fs-base);
 }
 
+/* ==========================================================================
+   演示模式
+   ========================================================================== */
+
+.settings__demo-hint {
+  font-size: var(--fs-base);
+  color: var(--c-text-sub);
+  line-height: 1.8;
+}
+
+.settings__demo-hint strong {
+  color: var(--c-text);
+}
+
+.settings__scenarios {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+.settings__scenario {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-idle);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+  text-align: left;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.settings__scenario:hover:not(:disabled) {
+  background: var(--c-surface);
+  border-color: var(--c-border-strong);
+}
+
+.settings__scenario:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.settings__scenario.is-normal {
+  border-left-color: var(--c-normal);
+}
+.settings__scenario.is-info {
+  border-left-color: var(--c-info);
+}
+.settings__scenario.is-warning {
+  border-left-color: var(--c-warning);
+}
+.settings__scenario.is-critical {
+  border-left-color: var(--c-critical);
+}
+
+.settings__scenario-label {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.settings__scenario-desc {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  line-height: 1.6;
+}
+
+.settings__demo-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px dashed var(--c-border);
+  flex-wrap: wrap;
+}
+
+.settings__demo-state {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.settings__demo-state strong {
+  color: var(--c-text);
+}
+
 /* ---- 设备台账表 ---- */
 .settings__table-wrap {
   overflow-x: auto;
@@ -215,6 +303,15 @@
 
 @media (max-width: 1100px) {
   .settings__caps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings__scenarios {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .settings__scenarios {
     grid-template-columns: minmax(0, 1fr);
   }
 }
