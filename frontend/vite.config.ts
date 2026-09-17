@@ -28,9 +28,16 @@ export default defineConfig({
     chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
-        manualChunks: {
-          echarts: ['echarts'],
-          react: ['react', 'react-dom'],
+        // 把体积最大的两个依赖拆成独立 chunk，便于浏览器缓存与并行加载。
+        // ECharts 仅在雷视联动/预警等页面使用，由 Rollup 自动做按需拆分。
+        manualChunks(id) {
+          if (id.includes('node_modules/echarts') || id.includes('node_modules/zrender')) {
+            return 'echarts'
+          }
+          if (id.includes('node_modules/react')) {
+            return 'react'
+          }
+          return undefined
         },
       },
     },

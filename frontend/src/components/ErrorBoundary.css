@@ -1,0 +1,98 @@
+/* ==========================================================================
+   致命错误兜底页（ErrorBoundary）
+   工业风的克制呈现，不白屏、给出可执行的恢复动作
+   ========================================================================== */
+
+.fatal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--sp-6);
+  background: var(--c-bg);
+}
+
+.fatal__card {
+  width: 100%;
+  max-width: 600px;
+  padding: var(--sp-8);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-top: 3px solid var(--c-warning);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-card);
+}
+
+.fatal__mark {
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin-bottom: var(--sp-5);
+  background: var(--c-warning);
+}
+
+.fatal__title {
+  font-size: var(--fs-xl);
+  color: var(--c-text);
+}
+
+.fatal__desc {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-md);
+  color: var(--c-text-sub);
+  line-height: 1.8;
+}
+
+.fatal__detail {
+  margin-top: var(--sp-4);
+  padding: var(--sp-3);
+  max-height: 140px;
+  overflow: auto;
+  background: #f7f9fa;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.fatal__actions {
+  display: flex;
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+}
+
+.fatal__btn {
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: var(--fs-md);
+}
+
+.fatal__btn:hover {
+  background: var(--c-surface-alt);
+}
+
+.fatal__btn--primary {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #fff;
+}
+
+.fatal__btn--primary:hover {
+  background: var(--c-primary-dark);
+}
+
+.fatal__hint {
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 1px dashed var(--c-border);
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  line-height: 1.9;
+}

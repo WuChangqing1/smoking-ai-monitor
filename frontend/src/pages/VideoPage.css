@@ -1,0 +1,85 @@
+/* ==========================================================================
+   视频监控页
+   ========================================================================== */
+
+.video-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.video-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--sp-4);
+  align-items: start;
+}
+
+.video-page__main-wrap {
+  padding: var(--sp-3);
+}
+
+.video-page__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.video-page__note {
+  font-size: var(--fs-base);
+  color: var(--c-text-sub);
+  line-height: 1.85;
+}
+
+.video-page__note + .video-page__note {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px dashed var(--c-border);
+}
+
+.video-page__note strong {
+  color: var(--c-text);
+}
+
+/* ---- 多监控点缩略卡 ---- */
+.video-page__grid {
+  min-width: 0;
+}
+
+.video-page__thumb {
+  padding: var(--sp-3);
+}
+
+/* 缩略画面保持 16:9，占位文案在小尺寸下仍可读 */
+.video-page__thumb .monitor-video__placeholder-title {
+  font-size: var(--fs-base);
+}
+
+.video-page__thumb .monitor-video__placeholder-desc {
+  display: none;
+}
+
+.video-page__thumb-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 8px var(--sp-3);
+  border-top: 1px solid var(--c-border);
+  background: var(--c-surface-alt);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.video-page__thumb-meta .mono {
+  font-family: var(--font-mono);
+  color: var(--c-text-muted);
+}
+
+@media (max-width: 1360px) {
+  .video-page__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

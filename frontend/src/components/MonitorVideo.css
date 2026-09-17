@@ -1,0 +1,110 @@
+/* ==========================================================================
+   监控画面
+   视频 / 静态图 / 占位三种模式共用同一容器，保证尺寸与叠加层稳定
+   ========================================================================== */
+
+.monitor-video {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #10181b;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* object-fit: contain —— 窗口尺寸变化时画面不裁切、不变形，
+   极窄容器下若出现letterbox，用深色底承接，观感仍完整 */
+.monitor-video__media {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #10181b;
+}
+
+/* ---- 叠加信息：小、半透明、不遮挡主体 ---- */
+.monitor-video__timestamp,
+.monitor-video__camera,
+.monitor-video__notice {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: #f2f6f7;
+  background: rgba(16, 24, 27, 0.55);
+  padding: 2px 7px;
+  border-radius: var(--r-xs);
+  letter-spacing: 0.3px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.monitor-video__timestamp {
+  top: 9px;
+  left: 10px;
+}
+
+.monitor-video__camera {
+  bottom: 9px;
+  right: 10px;
+  font-weight: 600;
+}
+
+/* 回退提示放右下偏上，避免与 camera 标签重叠 */
+.monitor-video__notice {
+  right: 10px;
+  bottom: 36px;
+  background: rgba(217, 119, 6, 0.86);
+  font-family: var(--font-sans);
+}
+
+/* ---- 占位 ---- */
+.monitor-video__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: var(--sp-5);
+  text-align: center;
+}
+
+.monitor-video__placeholder-mark {
+  width: 26px;
+  height: 18px;
+  border: 2px solid #46585f;
+  border-radius: var(--r-xs);
+  position: relative;
+}
+
+.monitor-video__placeholder-mark::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 5px;
+  background: #46585f;
+}
+
+.monitor-video__placeholder-title {
+  font-size: var(--fs-md);
+  color: #a8b7bd;
+  font-weight: 600;
+}
+
+.monitor-video__placeholder-desc {
+  font-size: var(--fs-sm);
+  color: #6e8189;
+  max-width: 380px;
+  line-height: 1.7;
+}
+
+.monitor-video__placeholder-desc code {
+  background: rgba(255, 255, 255, 0.08);
+  color: #93b8a5;
+  margin: 0 3px;
+}

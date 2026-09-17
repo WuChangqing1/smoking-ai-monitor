@@ -1,0 +1,207 @@
+/* ==========================================================================
+   顶部栏
+   白底 + 底部一条绿色标识线，横向排列：品牌 / 运行状态 / 时间
+   ========================================================================== */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  height: var(--h-topbar);
+  padding: 0 var(--sp-5);
+  background: var(--c-surface);
+  border-bottom: 2px solid var(--c-primary);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+}
+
+/* ---- 品牌区 ---- */
+.topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.topbar__mark {
+  width: 4px;
+  height: 26px;
+  background: var(--c-primary);
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.topbar__titles {
+  min-width: 0;
+}
+
+.topbar__title {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar__subtitle {
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+/* ---- 运行状态胶囊 ---- */
+.topbar__status {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+.status-pill__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-idle);
+  flex-shrink: 0;
+}
+
+.status-pill__label {
+  color: var(--c-text-muted);
+}
+
+.status-pill__value {
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+/* 状态着色：绿=正常 橙=预警 红=异常 灰=离线 */
+.status-pill--ok {
+  border-color: var(--c-primary-border);
+  background: var(--c-normal-bg);
+}
+.status-pill--ok .status-pill__dot {
+  background: var(--c-normal);
+}
+.status-pill--ok .status-pill__value {
+  color: var(--c-primary-dark);
+}
+
+.status-pill--warn {
+  border-color: #ecc9a0;
+  background: var(--c-warning-bg);
+}
+.status-pill--warn .status-pill__dot {
+  background: var(--c-warning);
+}
+.status-pill--warn .status-pill__value {
+  color: #a35c05;
+}
+
+.status-pill--error {
+  border-color: #e8b4b4;
+  background: var(--c-critical-bg);
+}
+.status-pill--error .status-pill__dot {
+  background: var(--c-critical);
+}
+.status-pill--error .status-pill__value {
+  color: var(--c-critical);
+}
+
+.status-pill--offline .status-pill__dot {
+  background: var(--c-idle);
+}
+.status-pill--offline .status-pill__value {
+  color: var(--c-text-muted);
+}
+
+/* ---- 右侧时间与提示 ---- */
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding-left: var(--sp-4);
+  border-left: 1px solid var(--c-border);
+  flex-shrink: 0;
+}
+
+.topbar__clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  white-space: nowrap;
+}
+
+.topbar__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.topbar__tag--idle {
+  background: var(--c-info-bg);
+  border-color: #cfdae4;
+  color: var(--c-info);
+}
+
+button.topbar__tag--warn {
+  background: var(--c-warning-bg);
+  border-color: #ecc9a0;
+  color: #a35c05;
+  cursor: pointer;
+}
+button.topbar__tag--warn:hover {
+  background: #fbe8cd;
+}
+
+/* ---- 窄屏收敛 ---- */
+@media (max-width: 1500px) {
+  .topbar__subtitle {
+    display: none;
+  }
+}
+
+@media (max-width: 1240px) {
+  .status-pill__label {
+    display: none;
+  }
+  .topbar__clock {
+    font-size: var(--fs-xs);
+  }
+}
+
+@media (max-width: 1040px) {
+  .topbar__status {
+    display: none;
+  }
+}

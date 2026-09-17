@@ -1,0 +1,24 @@
+.chart {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.chart__canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.chart__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border: 1px dashed var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+}
+
+.chart__empty .empty-state {
+  padding: var(--sp-4);
+}

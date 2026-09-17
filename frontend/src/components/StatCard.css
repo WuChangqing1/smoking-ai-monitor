@@ -1,0 +1,133 @@
+/* ==========================================================================
+   核心状态卡片
+   左侧 3px 状态色条 + 大号等宽数字
+   ========================================================================== */
+
+.stat-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) calc(var(--sp-4) + 3px);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-card);
+  overflow: hidden;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+/* 状态色条 */
+.stat-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--c-idle);
+}
+
+.stat-card--normal::before {
+  background: var(--c-normal);
+}
+.stat-card--warning::before {
+  background: var(--c-warning);
+}
+.stat-card--critical::before {
+  background: var(--c-critical);
+}
+.stat-card--info::before {
+  background: var(--c-info);
+}
+.stat-card--primary::before {
+  background: var(--c-primary);
+}
+
+.stat-card--clickable {
+  cursor: pointer;
+}
+
+.stat-card--clickable:hover {
+  border-color: var(--c-border-strong);
+  box-shadow: var(--sh-raised);
+}
+
+/* ---- 内容 ---- */
+.stat-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.stat-card__label {
+  font-size: var(--fs-base);
+  color: var(--c-text-sub);
+  white-space: nowrap;
+}
+
+.stat-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+  color: var(--c-text-muted);
+  flex-shrink: 0;
+}
+
+.stat-card--normal .stat-card__icon {
+  background: var(--c-normal-bg);
+  color: var(--c-primary-dark);
+}
+.stat-card--warning .stat-card__icon {
+  background: var(--c-warning-bg);
+  color: var(--c-warning);
+}
+.stat-card--critical .stat-card__icon {
+  background: var(--c-critical-bg);
+  color: var(--c-critical);
+}
+
+.stat-card__value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-height: 34px;
+}
+
+.stat-card__value {
+  font-family: var(--font-mono);
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--c-text);
+  letter-spacing: -0.5px;
+}
+
+.stat-card--normal .stat-card__value {
+  color: var(--c-primary-dark);
+}
+.stat-card--warning .stat-card__value {
+  color: #a35c05;
+}
+.stat-card--critical .stat-card__value {
+  color: var(--c-critical);
+}
+.stat-card--info .stat-card__value {
+  color: var(--c-info);
+}
+
+.stat-card__suffix {
+  font-size: var(--fs-md);
+  color: var(--c-text-muted);
+}
+
+.stat-card__footnote {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  line-height: 1.6;
+}

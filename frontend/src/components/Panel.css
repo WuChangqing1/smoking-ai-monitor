@@ -1,0 +1,91 @@
+/* ==========================================================================
+   Panel 卡片容器
+   白底 + 细描边 + 极小阴影，顶部 3px 状态色条用于强调
+   ========================================================================== */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-card);
+  overflow: hidden;
+}
+
+.panel--primary {
+  border-top: 3px solid var(--c-primary);
+}
+.panel--warning {
+  border-top: 3px solid var(--c-warning);
+}
+.panel--critical {
+  border-top: 3px solid var(--c-critical);
+}
+
+/* ---- 头部 ---- */
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: 42px;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface-alt);
+  flex-shrink: 0;
+}
+
+.panel__head-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.panel__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-sm);
+  background: var(--c-primary-light);
+  color: var(--c-primary-dark);
+  flex-shrink: 0;
+}
+
+.panel__title {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel__desc {
+  margin-top: 1px;
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+}
+
+.panel__extra {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+
+/* ---- 内容区 ---- */
+.panel__body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--sp-4);
+}
+
+.panel__body--flush {
+  padding: 0;
+}

@@ -1,6 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+// 样式加载顺序：设计令牌 → 基础排版 → 全局补充
+import './styles/tokens.css'
+import './styles/base.css'
 import './styles/index.css'
 
 const rootEl = document.getElementById('root')

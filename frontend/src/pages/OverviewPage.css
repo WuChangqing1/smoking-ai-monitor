@@ -1,0 +1,117 @@
+/* ==========================================================================
+   综合监控首页
+   ========================================================================== */
+
+.overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.overview__stats {
+  flex-shrink: 0;
+}
+
+/* ---- 视频区 + 右侧信息栏 ---- */
+.overview__main {
+  min-width: 0;
+}
+
+.overview__video-panel {
+  min-width: 0;
+}
+
+.overview__video-wrap {
+  padding: var(--sp-3) var(--sp-3) 0;
+}
+
+/* 视频下方信息条 */
+.overview__video-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-top: var(--sp-3);
+  border-top: 1px solid var(--c-border);
+  background: var(--c-surface-alt);
+}
+
+.overview__meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px var(--sp-5) 9px var(--sp-3);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.overview__meta-item + .overview__meta-item {
+  border-left: 1px solid var(--c-border);
+}
+
+.overview__meta-label {
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+.overview__meta-value {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.overview__meta-value.mono {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+/* ---- 右侧信息栏 ---- */
+.overview__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* 系统状态里的值按状态着色 */
+.overview__status-value {
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+}
+
+.overview__status-value.is-ok {
+  color: var(--c-primary-dark);
+}
+.overview__status-value.is-warn {
+  color: #a35c05;
+}
+.overview__status-value.is-error {
+  color: var(--c-critical);
+}
+.overview__status-value.is-offline {
+  color: var(--c-text-muted);
+}
+
+/* ---- 文本按钮 ---- */
+.overview__link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--c-primary);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.overview__link:hover {
+  color: var(--c-primary-dark);
+  text-decoration: underline;
+}
+
+/* ---- 下部区域 ---- */
+.overview__lower {
+  min-width: 0;
+}

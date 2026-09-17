@@ -1,6 +1,25 @@
-/**
- * 工业监控平台全局样式入口。
- * 设计令牌在 tokens.css，基础排版在 base.css，组件样式在各页面/组件自己的 css 文件。
- */
-import './styles/tokens.css'
-import './styles/base.css'
+/* ==========================================================================
+   全局样式附加层
+   --------------------------------------------------------------------------
+   注意：设计令牌与基础排版由 main.tsx 直接 import（tokens.css → base.css），
+   本文件只放不依赖顺序的全局补充样式。
+   不要在这里写 CSS 的 @import，也不要写 JS 风格的 import 语句。
+   ========================================================================== */
+
+/* 打印时去掉导航与按钮，便于把监控页面留档 */
+@media print {
+  .topbar,
+  .sidebar,
+  .page__head-right {
+    display: none !important;
+  }
+  .shell,
+  .workspace {
+    height: auto;
+    overflow: visible;
+  }
+  .panel,
+  .stat-card {
+    break-inside: avoid;
+  }
+}

@@ -31,4 +31,14 @@
 - 最终监控视频未生成 → 当前用 `检测图片.png` 作主监控画面占位。
 - Linux 服务器部署未开始（本地开发测试基本完成后再做，避免频繁 SSH）。
 
-**Commit**：`待填（轮次 1 提交后回填）`
+**Commit**：`8c9718ca0ec708c82dfcbdd59ab55165244723be`
+（`chore: initialize smoking monitoring platform` → 已推送 GitHub **Private** 仓库 `WuChangqing1/smoking-ai-monitor`）
+
+**环境说明（后续开发必须遵守）**
+
+- Python 一律使用 conda `smoking` 环境：
+  `D:\App\Business\Coding\Python\Miniconda\envs\smoking\python.exe`（Python 3.12.14）
+- 本机安全策略会拦截：工作区外写入、PyPI 出网、以及 esbuild / git 凭据助手依赖的命名管道。
+  因此 `pip install`、`npm run build`、`npm run dev`、`git push` 需要在放宽权限的情况下执行一次。
+- npm 缓存固定在仓库内（`frontend/.npmrc` → `../.npm-cache`），安装使用 `--ignore-scripts`
+  （esbuild / rollup 的平台二进制通过 optionalDependencies 分发，无需 postinstall）。
