@@ -225,4 +225,5 @@
 
 首页、雷视联动、风险趋势、视觉判断随场景同步变化，无互相矛盾。
 
-**Commit**：`待填`
+**Commit**：`7cf7fd60687f2d1cb7fc776a50a137b22b8efdc9`
+（`feat: implement radar vision fusion monitoring` → 已推送）
