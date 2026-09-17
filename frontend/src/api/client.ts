@@ -116,6 +116,9 @@ export const api = {
   knowledge: (query: { keyword?: string; event_type?: string } = {}) =>
     request<KnowledgeEvent[]>(`/api/knowledge${toQuery(query)}`),
 
+  /** 知识库异常类型列表（筛选项来源） */
+  knowledgeTypes: () => request<string[]>('/api/knowledge/types'),
+
   /** 智能预警（未来 30 分钟风险预测） */
   prediction: () => request<Prediction>('/api/prediction'),
 

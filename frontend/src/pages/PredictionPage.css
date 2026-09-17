@@ -1,0 +1,370 @@
+/* ==========================================================================
+   智能预警页
+   ========================================================================== */
+
+.predict {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.predict__loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.predict__stale {
+  padding: 7px var(--sp-4);
+  border: 1px solid #ecc9a0;
+  border-left: 3px solid var(--c-warning);
+  border-radius: var(--r-sm);
+  background: var(--c-warning-bg);
+  color: #a35c05;
+  font-size: var(--fs-sm);
+}
+
+/* ==========================================================================
+   当前 → 预测 的对比条
+   ========================================================================== */
+
+.predict__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--sp-3);
+  align-items: stretch;
+  min-width: 0;
+}
+
+.predict__big {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-height: 46px;
+}
+
+.predict__big-value {
+  font-family: var(--font-mono);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -1px;
+  color: var(--c-text);
+}
+
+.predict__big-value.is-normal {
+  color: var(--c-primary-dark);
+}
+.predict__big-value.is-info {
+  color: var(--c-info);
+}
+.predict__big-value.is-warning {
+  color: #a35c05;
+}
+.predict__big-value.is-critical {
+  color: var(--c-critical);
+}
+
+.predict__big-unit {
+  font-size: var(--fs-lg);
+  color: var(--c-text-muted);
+}
+
+.predict__big-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+/* ---- 中间箭头 ---- */
+.predict__arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 var(--sp-2);
+  min-width: 108px;
+}
+
+.predict__arrow-line {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--c-border) 0%,
+    var(--c-primary-border) 100%
+  );
+  border-radius: 1px;
+}
+
+.predict__arrow-label {
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+.predict__arrow-tip {
+  font-size: var(--fs-lg);
+  color: var(--c-primary);
+  line-height: 1;
+}
+
+/* ==========================================================================
+   免责/口径说明
+   ========================================================================== */
+
+.predict__disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: var(--sp-3);
+  padding: 8px var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--c-info-bg);
+  border-left: 3px solid var(--c-info);
+  font-size: var(--fs-sm);
+  color: var(--c-info);
+  line-height: 1.75;
+}
+
+.predict__disclaimer svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+/* ==========================================================================
+   预警依据
+   ========================================================================== */
+
+.predict__mid {
+  min-width: 0;
+}
+
+.predict__evidence {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.predict__evidence-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+  border-left: 3px solid var(--c-border);
+}
+
+/* 依据来源色：与雷达/视觉/输送的语义色彩对应 */
+.predict__evidence-item:has(.is-radar) {
+  border-left-color: var(--c-primary);
+}
+.predict__evidence-item:has(.is-vision) {
+  border-left-color: var(--c-info);
+}
+.predict__evidence-item:has(.is-conveyor) {
+  border-left-color: var(--c-warning);
+}
+.predict__evidence-item:has(.is-knowledge) {
+  border-left-color: #8a6bbf;
+}
+
+.predict__evidence-src {
+  flex-shrink: 0;
+  width: 62px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-text-sub);
+}
+
+.predict__evidence-text {
+  font-size: var(--fs-base);
+  color: var(--c-text-sub);
+  line-height: 1.75;
+}
+
+.predict__suggestions {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.predict__suggestions li {
+  font-size: var(--fs-base);
+  color: var(--c-text-sub);
+  line-height: 1.75;
+}
+
+/* ==========================================================================
+   相似历史事件
+   ========================================================================== */
+
+.predict__similar {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.predict__similar-item {
+  padding: var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+}
+
+.predict__similar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.predict__similar-code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.predict__similar-meta {
+  margin-top: 3px;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.predict__similar-result {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px dashed var(--c-border);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.75;
+}
+
+.predict__similar-hint {
+  margin-top: var(--sp-3);
+  padding: 8px var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--c-warning-bg);
+  border-left: 3px solid var(--c-warning);
+  font-size: var(--fs-sm);
+  color: #a35c05;
+  line-height: 1.75;
+}
+
+.predict__link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--c-primary);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.predict__link:hover {
+  color: var(--c-primary-dark);
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   扩展能力
+   ========================================================================== */
+
+.predict__caps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+.predict__cap {
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-info);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+}
+
+.predict__cap-title {
+  margin-top: 7px;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.predict__cap-desc {
+  margin-top: 4px;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.75;
+}
+
+.predict__cap-flow {
+  margin: var(--sp-3) 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.predict__cap-flow li {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  line-height: 1.7;
+}
+
+.predict__cap-industries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.predict__cap-industries li {
+  padding: 2px 9px;
+  border: 1px solid var(--c-primary-border);
+  border-radius: var(--r-sm);
+  background: var(--c-primary-light);
+  color: var(--c-primary-dark);
+  font-size: var(--fs-sm);
+}
+
+/* ==========================================================================
+   响应式
+   ========================================================================== */
+
+@media (max-width: 1240px) {
+  .predict__hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .predict__arrow {
+    flex-direction: row;
+    padding: var(--sp-2) 0;
+  }
+  .predict__arrow-line {
+    width: 40px;
+  }
+  .predict__arrow-tip {
+    transform: rotate(90deg);
+  }
+}
+
+@media (max-width: 1100px) {
+  .predict__caps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

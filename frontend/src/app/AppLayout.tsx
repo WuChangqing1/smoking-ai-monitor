@@ -77,8 +77,7 @@ export default function AppLayout() {
     fusion: <FusionPage realtime={realtime.data} realtimeError={realtime.error} />,
     alarms: <AlarmsPage />,
     trace: <TracePage />,
-    prediction: <PredictionPage />,
-    knowledge: <KnowledgePage />,
+    prediction: <PredictionPage />,    knowledge: <KnowledgePage />,
     settings: (
       <SettingsPage
         status={status.data}

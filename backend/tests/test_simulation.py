@@ -613,6 +613,45 @@ class TestConcurrencyAndPrediction:
         assert radar_evidence
         assert "下降" in radar_evidence[0].text
 
+    def test_normal_state_reports_no_decline(self) -> None:
+        """正常状态下围绕基准的微小抖动不能被描述成"持续下降"。
+
+        否则会出现"已持续下降 2 分钟，变化 -0.00 m"这种自相矛盾的依据。
+        """
+        engine = make_engine()
+        engine.reset()
+        drive(engine, 180)  # 3 分钟稳定运行，保证观察窗口充足
+
+        prediction = engine.prediction(30)
+        radar_evidence = next(e for e in prediction.evidence if e.source == "radar")
+
+        assert engine.snapshot().sim_state == "normal"
+        assert "持续下降" not in radar_evidence.text
+        assert "小幅波动" in radar_evidence.text
+
+    def test_decline_requires_meaningful_drop(self) -> None:
+        """一旦判定出下降时长，其累计降幅就必须是实质性的。
+
+        正常状态允许出现缓慢漂移（这是真实传感器的特征），
+        但不允许在累计降幅只有几毫米噪声的情况下报告"持续下降"。
+        """
+        engine = make_engine()
+        engine.reset()
+        drive(engine, 120)
+
+        minutes = engine._radar_decline_minutes()
+        samples = list(engine.recent_samples(10_000))
+        latest = samples[-1]
+
+        if minutes > 0:
+            # 回溯到判定起点，累计降幅必须达到阈值
+            cutoff = latest.ts - minutes * 60.0
+            start = next(s for s in samples if s.ts >= cutoff)
+            drop = start.radar_filtered - latest.radar_filtered
+            assert drop >= SimulationEngine.RADAR_DECLINE_MIN_DROP - 1e-6, (
+                f"判定下降 {minutes} 分钟，但累计降幅仅 {drop:.4f} m"
+            )
+
     def test_prediction_curve_connects_actual_and_forecast(self) -> None:
         engine = make_engine()
         prediction = engine.prediction(30)

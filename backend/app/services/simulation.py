@@ -1126,43 +1126,83 @@ class SimulationEngine:
             return 0.0
         return (latest.risk_index - reference.risk_index) / (elapsed / 60.0)
 
+    #: 判定"持续下降"所需的最小累计降幅 (m)。
+    #: 取 5 mm：小于此幅度的波动属于传感器噪声与物料自然起伏，不构成趋势。
+    RADAR_DECLINE_MIN_DROP = 0.005
+
     def _radar_decline_minutes(self) -> float:
-        """雷达距离连续下降的时长（分钟）。"""
+        """雷达测距连续下降的时长（分钟）。
+
+        两个约束缺一不可：
+          1. 逐点回溯时允许 ±3 mm 的噪声容差；
+          2. 起点到当前点的**累计降幅**必须达到 RADAR_DECLINE_MIN_DROP。
+        否则正常状态下围绕基准的微小抖动会被误报成"持续下降"，
+        出现"已持续下降 2 分钟，变化 -0.00 m"这种自相矛盾的依据。
+        """
         samples = list(self._raw)
         if len(samples) < 2:
             return 0.0
+
         end = samples[-1]
-        start = end
+        start_index = len(samples) - 1
         previous = end.radar_filtered
-        # 允许 ±3 mm 的噪声容差
-        for s in reversed(samples[:-1]):
-            if s.radar_filtered <= previous + 0.003:
-                start = s
-                previous = s.radar_filtered
+
+        for i in range(len(samples) - 2, -1, -1):
+            if samples[i].radar_filtered <= previous + 0.003:
+                start_index = i
+                previous = samples[i].radar_filtered
             else:
                 break
-        return round((end.ts - start.ts) / 60.0, 1)
+
+        # 累计降幅不足 → 不认为存在下降趋势
+        if end.radar_filtered - samples[start_index].radar_filtered > -self.RADAR_DECLINE_MIN_DROP:
+            return 0.0
+
+        return round((end.ts - samples[start_index].ts) / 60.0, 1)
 
     def _coverage_delta(self) -> float:
         """视觉覆盖率相对 3 分钟前的变化量。"""
-        window = 180.0
+        return self._window_delta("vision_coverage", 180.0)
+
+    def _window_delta(self, field: str, window: float) -> float:
+        """某个字段相对 window 秒前的变化量。
+
+        刚切换场景（或刚重置）时历史窗口不足，此时差值不具备趋势含义，
+        调用方应据此避免给出"近 3 分钟变化 +0.0"这类容易被误读的表述。
+        """
         latest = self._raw[-1]
         for s in reversed(self._raw):
             if latest.ts - s.ts >= window:
-                return round(latest.vision_coverage - s.vision_coverage, 4)
+                return round(getattr(latest, field) - getattr(s, field), 4)
+        # 窗口不足：返回 0，并由 has_full_window 告知调用方
         return 0.0
+
+    def _has_full_window(self, window: float) -> bool:
+        """历史缓冲是否覆盖了完整的观察窗口。"""
+        if len(self._raw) < 2:
+            return False
+        return (self._raw[-1].ts - self._raw[0].ts) >= window
 
     def _evidence(self, sample: SimSample, slope: float) -> list[Evidence]:
         """预警依据：全部由真实计算得到，不是写死的文案。"""
         evidence: list[Evidence] = []
 
         decline = self._radar_decline_minutes()
+        # 下降一直追溯到缓冲起点时，说明观测窗口不足，实际下降时长可能更长
+        buffered = (self._raw[-1].ts - self._raw[0].ts) / 60.0
+        window_limited = buffered > 0 and decline >= buffered - 0.05
+
         if decline >= 0.5:
+            duration = (
+                f"已持续下降至少 {decline:.0f} 分钟"
+                if window_limited
+                else f"连续下降 {decline:.0f} 分钟"
+            )
             evidence.append(
                 Evidence(
                     source="radar",
                     text=(
-                        f"雷达测距连续 {decline:.0f} 分钟下降，"
+                        f"雷达测距{duration}，"
                         f"由基准 {BASELINE_DISTANCE:.2f} m 降至 {sample.radar_filtered:.2f} m"
                         f"（变化 {sample.radar_filtered - BASELINE_DISTANCE:+.2f} m）"
                     ),
@@ -1180,13 +1220,17 @@ class SimulationEngine:
             )
 
         coverage_delta = self._coverage_delta()
+        window_ready = self._has_full_window(180.0)
+        if window_ready:
+            coverage_trend = f"近 3 分钟变化 {coverage_delta * 100:+.1f} 个百分点"
+        else:
+            coverage_trend = "历史窗口不足 3 分钟，暂无法给出覆盖率变化趋势"
         evidence.append(
             Evidence(
                 source="vision",
                 text=(
                     f"视觉模型测得输送区域物料覆盖率 {sample.vision_coverage * 100:.1f}%，"
-                    f"近 3 分钟变化 {coverage_delta * 100:+.1f} 个百分点，"
-                    f"置信度 {sample.vision_confidence * 100:.1f}%"
+                    f"{coverage_trend}，置信度 {sample.vision_confidence * 100:.1f}%"
                 ),
             )
         )

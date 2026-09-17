@@ -1,0 +1,353 @@
+/* ==========================================================================
+   知识库页
+   ========================================================================== */
+
+.knowledge {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* ==========================================================================
+   检索条
+   ========================================================================== */
+
+.knowledge__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-card);
+}
+
+.knowledge__search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1 1 320px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+}
+
+.knowledge__search:focus-within {
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 2px var(--c-primary-light);
+}
+
+.knowledge__search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--c-text);
+  font-family: inherit;
+  font-size: var(--fs-base);
+}
+
+.knowledge__search input::placeholder {
+  color: var(--c-text-muted);
+}
+
+/* 去掉浏览器自带的搜索清除按钮，用自定义的 */
+.knowledge__search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.knowledge__clear {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--c-border);
+  color: var(--c-text-sub);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.knowledge__clear:hover {
+  background: var(--c-border-strong);
+}
+
+/* ---- 类型筛选 ---- */
+.knowledge__types {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.knowledge__type {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+  color: var(--c-text-sub);
+  font-size: var(--fs-sm);
+}
+
+.knowledge__type:hover {
+  border-color: var(--c-border-strong);
+  color: var(--c-text);
+}
+
+.knowledge__type.is-active {
+  background: var(--c-primary-light);
+  border-color: var(--c-primary-border);
+  color: var(--c-primary-dark);
+  font-weight: 600;
+}
+
+.knowledge__type-count {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+}
+
+.knowledge__type.is-active .knowledge__type-count {
+  color: var(--c-primary-dark);
+}
+
+.knowledge__count {
+  margin-left: auto;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+.knowledge__count strong {
+  font-family: var(--font-mono);
+  color: var(--c-text);
+}
+
+.knowledge__stale {
+  padding: 7px var(--sp-4);
+  border: 1px solid #ecc9a0;
+  border-left: 3px solid var(--c-warning);
+  border-radius: var(--r-sm);
+  background: var(--c-warning-bg);
+  color: #a35c05;
+  font-size: var(--fs-sm);
+}
+
+.knowledge__loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* ==========================================================================
+   经验条目
+   ========================================================================== */
+
+.knowledge__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.knowledge__item {
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  overflow: hidden;
+  transition: border-color 0.12s ease;
+}
+
+.knowledge__item:hover {
+  border-color: var(--c-border-strong);
+}
+
+.knowledge__item.is-open {
+  border-left-color: var(--c-primary);
+}
+
+.knowledge__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.knowledge__head:hover {
+  background: var(--c-surface-alt);
+}
+
+.knowledge__caret {
+  flex-shrink: 0;
+  display: inline-block;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--c-text-muted);
+  transform: rotate(0deg);
+  transition: transform 0.14s ease;
+}
+
+.knowledge__caret.is-open {
+  transform: rotate(90deg);
+  color: var(--c-primary);
+}
+
+.knowledge__head-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.knowledge__code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.knowledge__meta {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.knowledge__head-right {
+  flex-shrink: 0;
+}
+
+/* ---- 展开内容 ---- */
+.knowledge__body {
+  padding: 0 var(--sp-4) var(--sp-4);
+  border-top: 1px solid var(--c-border);
+  background: var(--c-surface-alt);
+  animation: knowledge-open 0.16s ease-out;
+}
+
+@keyframes knowledge-open {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.knowledge__cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+
+.knowledge__field {
+  padding: var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+}
+
+.knowledge__field--normal {
+  border-left: 3px solid var(--c-normal);
+}
+
+.knowledge__field-label {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+  margin-bottom: 5px;
+}
+
+.knowledge__field-text {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.8;
+}
+
+/* ---- 异常前兆：经验库里最值得复用的信息，单独强调 ---- */
+.knowledge__highlight {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-sm);
+  background: var(--c-warning-bg);
+  border-left: 3px solid var(--c-warning);
+}
+
+.knowledge__highlight-label {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: #a35c05;
+  margin-bottom: 4px;
+}
+
+.knowledge__highlight-text {
+  font-size: var(--fs-base);
+  color: #8a4d04;
+  line-height: 1.8;
+}
+
+/* ---- 预防建议 ---- */
+.knowledge__preventive {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-sm);
+  background: var(--c-primary-light);
+  border-left: 3px solid var(--c-primary);
+}
+
+.knowledge__preventive-label {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-primary-dark);
+  margin-bottom: 4px;
+}
+
+.knowledge__preventive-text {
+  font-size: var(--fs-base);
+  color: var(--c-primary-dark);
+  line-height: 1.8;
+}
+
+/* ==========================================================================
+   响应式
+   ========================================================================== */
+
+@media (max-width: 1240px) {
+  .knowledge__cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .knowledge__bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .knowledge__count {
+    margin-left: 0;
+  }
+}
