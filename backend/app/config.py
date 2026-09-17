@@ -39,8 +39,12 @@ class Settings:
     # 原始资料口径：雷达与摄像头采集频率 10 Hz
     data_rate_hz: int = int(os.getenv("SMOKING_DATA_RATE_HZ", "10"))
 
-    # 仿真推进间隔（秒）。10 Hz 落库太重，实时快照按 1 Hz 输出，内部仍按 10 Hz 演化。
-    tick_seconds: float = float(os.getenv("SMOKING_TICK_SECONDS", "1.0"))
+    # 仿真推进间隔（秒）。资料口径采集频率为 10 Hz，引擎内部按 100 ms 推进；
+    # 该值仅控制后台 tick 线程的批量步进节奏。
+    tick_seconds: float = float(os.getenv("SMOKING_TICK_SECONDS", "0.1"))
+
+    # 仿真随机种子。固定 seed 保证数据可复现，pytest 不会因随机数偶发失败。
+    simulation_seed: int = int(os.getenv("SMOKING_SIMULATION_SEED", "20250519"))
 
     db_path: Path = Path(os.getenv("SMOKING_DB_PATH", str(BASE_DIR / "data" / "smoking.db")))
 
