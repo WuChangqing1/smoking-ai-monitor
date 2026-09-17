@@ -133,6 +133,12 @@ RISK_WEIGHT_AUX = 5.0
 #: 风险指数低端截断，正常状态不会掉到 0
 RISK_FLOOR = 6.0
 
+#: 预测的斜率外推上限（百分点）与预测封顶值。
+#: 概率预测不应该给出 100% 这种确定性结论，因此封顶在 96%。
+FORECAST_MAX_EXTRAPOLATION = 45.0
+FORECAST_MAX_PULL = 12.0
+FORECAST_CEILING = 96.0
+
 #: 物料覆盖率映射：severity 0 → 18%，severity 1 → 86%
 COVERAGE_BASE = 0.18
 COVERAGE_SPAN = 0.68
@@ -975,18 +981,41 @@ class SimulationEngine:
     def prediction(self, horizon_minutes: int = 30) -> PredictionData:
         """未来 N 分钟风险预测。
 
-        实现方式：用最近一段时间的风险斜率做线性外推，并叠加"状态机趋势"权重，
+        实现方式：用最近 5 分钟的风险斜率做线性外推，并叠加"状态机趋势"权重，
         最后给出概率化措辞与依据列表。不外推为确定性结论。
+
+        为防止把短期扰动放大成"必然爆表"，做了三重约束：
+          1. 斜率取 5 分钟窗口，短期抖动会被摊平；
+          2. 斜率外推走饱和函数（渐近逼近上限），而不是线性无限外推；
+          3. 只有在趋势确实向上（rising / rising_fast）时才叠加状态机牵引，且牵引量有上限；
+          4. 整体预测封顶 96% —— 概率预测不给出 100% 的确定性结论。
         """
         with self._lock:
             sample = self._raw[-1]
             current = sample.risk_index
             slope = self._risk_slope_per_minute()
+            trend = self._risk_trend()
 
-            # 外推：斜率贡献 + 状态机目标（接近预警/报警时会继续上升）
+            # 饱和式外推：斜率越大越接近上限，但永远不会越过它
+            raw_extrapolation = slope * horizon_minutes * 0.55
+            if raw_extrapolation > 0.0:
+                k = raw_extrapolation / FORECAST_MAX_EXTRAPOLATION
+                extrapolation = FORECAST_MAX_EXTRAPOLATION * k / (1.0 + k)
+            else:
+                k = raw_extrapolation / FORECAST_MAX_EXTRAPOLATION
+                extrapolation = FORECAST_MAX_EXTRAPOLATION * k / (1.0 - k) if k > -1.0 else -18.0
+                extrapolation = max(extrapolation, -18.0)
+
+            # 趋势确实向上时，才叠加"当前阶段目标"的牵引
             target = self._risk_from_severity(STAGE_SEVERITY_TARGET[self._stage])
-            pull = (target - current) * 0.45 if target > current else 0.0
-            forecast = self._clamp(current + slope * horizon_minutes * 0.55 + pull, 0.0, 100.0)
+            if target > current and trend in ("rising", "rising_fast"):
+                pull = min((target - current) * 0.45, FORECAST_MAX_PULL)
+            else:
+                pull = 0.0
+
+            forecast = self._clamp(
+                current + extrapolation + pull, 0.0, FORECAST_CEILING
+            )
 
             diff = forecast - current
             if diff >= 20.0:
@@ -1022,8 +1051,12 @@ class SimulationEngine:
             )
 
     def _risk_slope_per_minute(self) -> float:
-        """最近 3 分钟的风险变化率（百分点/分钟）。"""
-        window = 180.0
+        """最近 5 分钟的风险变化率（百分点/分钟）。
+
+        窗口取 5 分钟而不是更短：制丝线的物料变化是分钟级的连续过程，
+        窗口太短会把正常波动误判为"快速上升"。
+        """
+        window = 300.0
         latest = self._raw[-1]
         reference = None
         for s in reversed(self._raw):

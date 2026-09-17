@@ -74,7 +74,7 @@ export default function AppLayout() {
       />
     ),
     video: <VideoPage meta={meta.data} />,
-    fusion: <FusionPage />,
+    fusion: <FusionPage realtime={realtime.data} realtimeError={realtime.error} />,
     alarms: <AlarmsPage />,
     trace: <TracePage />,
     prediction: <PredictionPage />,

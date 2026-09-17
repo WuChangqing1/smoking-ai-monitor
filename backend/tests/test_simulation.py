@@ -538,6 +538,37 @@ class TestConcurrencyAndPrediction:
         assert "一定" not in joined
         assert "必然" not in joined
 
+    def test_prediction_does_not_saturate_prematurely(self) -> None:
+        """预测必须是分级的，不能一进入预警就封顶 —— 那等于给出确定性结论。"""
+        engine = make_engine()
+
+        settle(engine, "attention", 60)
+        attention_forecast = engine.prediction(30).forecast_index
+
+        settle(engine, "warning", 60)
+        warning_forecast = engine.prediction(30).forecast_index
+
+        settle(engine, "alarm", 60)
+        alarm_forecast = engine.prediction(30).forecast_index
+
+        assert attention_forecast < 80.0, f"关注阶段预测过高: {attention_forecast}"
+        assert warning_forecast < 100.0, "预警阶段不应封顶"
+        # 分级：关注 < 预警 <= 异常
+        assert attention_forecast < warning_forecast
+        assert warning_forecast <= alarm_forecast
+
+    def test_prediction_forecast_ordering_across_scenarios(self) -> None:
+        """风险越高的场景，其 30 分钟预测也应越高。"""
+        engine = make_engine()
+        forecasts = []
+        for scenario in ("normal", "attention", "warning", "alarm"):
+            settle(engine, scenario, 60)
+            forecasts.append(engine.prediction(30).forecast_index)
+
+        assert forecasts == sorted(forecasts), f"预测应随场景单调上升: {forecasts}"
+        # 且绝不是同一条水平线
+        assert forecasts[-1] - forecasts[0] > 20.0
+
     def test_prediction_evidence_reflects_radar_decline(self) -> None:
         engine = make_engine()
         settle(engine, "alarm", 60)

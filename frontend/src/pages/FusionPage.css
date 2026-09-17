@@ -1,0 +1,385 @@
+/* ==========================================================================
+   雷视联动页
+   左＝视频 / 中＝雷达分析 / 右＝视觉 AI + 联合判定 / 下＝趋势 + 技术解释
+   ========================================================================== */
+
+.fusion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.fusion__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: var(--sp-4);
+  align-items: start;
+  min-width: 0;
+}
+
+.fusion__video {
+  padding: var(--sp-3);
+}
+
+.fusion__right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* ---- 大号读数 ---- */
+.fusion__headline {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding-bottom: var(--sp-3);
+  margin-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.fusion__headline-value {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--c-text);
+  letter-spacing: -0.6px;
+}
+
+.fusion__headline-unit {
+  font-size: var(--fs-lg);
+  color: var(--c-text-muted);
+}
+
+.fusion__headline-label {
+  margin-left: auto;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+/* ---- 传感器规格 ---- */
+.fusion__spec {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--c-border);
+}
+
+.fusion__spec-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-2) var(--sp-4);
+  margin: 0;
+}
+
+.fusion__spec-list div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--c-border);
+}
+
+.fusion__spec-list dt {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+.fusion__spec-list dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--c-text-sub);
+  white-space: nowrap;
+}
+
+.fusion__spec-list dd.fusion__spec-em {
+  color: var(--c-primary-dark);
+}
+
+.fusion__spec-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: var(--sp-3);
+  padding: 8px var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--c-info-bg);
+  border-left: 3px solid var(--c-info);
+  font-size: var(--fs-sm);
+  color: var(--c-info);
+  line-height: 1.75;
+}
+
+.fusion__spec-note svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+/* ---- 视觉状态 ---- */
+.fusion__vision-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-3);
+  margin-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.fusion__vision-label {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.fusion__probabilistic {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px dashed var(--c-border);
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  line-height: 1.75;
+}
+
+.fusion__probabilistic svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+/* ==========================================================================
+   联合判定区
+   ========================================================================== */
+
+.fusion__formula {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0 var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.fusion__formula-node {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 62px;
+  height: 32px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text-sub);
+}
+
+.fusion__formula-op {
+  font-size: var(--fs-lg);
+  color: var(--c-text-muted);
+}
+
+.fusion__formula-arrow {
+  font-size: var(--fs-lg);
+  color: var(--c-text-muted);
+}
+
+.fusion__formula-result {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  height: 38px;
+  padding: 0 var(--sp-4);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.fusion__formula-result.is-normal {
+  background: var(--c-normal-bg);
+  border-color: var(--c-primary-border);
+  color: var(--c-primary-dark);
+}
+.fusion__formula-result.is-info {
+  background: var(--c-info-bg);
+  border-color: #cfdae4;
+  color: var(--c-info);
+}
+.fusion__formula-result.is-warning {
+  background: var(--c-warning);
+  border-color: var(--c-warning);
+  color: #fff;
+}
+.fusion__formula-result.is-critical {
+  background: var(--c-critical);
+  border-color: var(--c-critical);
+  color: #fff;
+}
+
+/* ---- 判断依据 ---- */
+.fusion__basis {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.fusion__basis li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--c-border);
+}
+
+.fusion__basis-key {
+  flex-shrink: 0;
+  width: 60px;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+.fusion__basis-val {
+  font-size: var(--fs-base);
+  color: var(--c-text-sub);
+  line-height: 1.7;
+}
+
+.fusion__reason {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+  border-left: 3px solid var(--c-primary-border);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.8;
+}
+
+.fusion__mode {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--c-border);
+}
+
+.fusion__mode-note {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+/* ==========================================================================
+   技术解释（三方对比）
+   ========================================================================== */
+
+.fusion__compare {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.fusion__compare-col {
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--c-border);
+  border-top: 3px solid var(--c-info);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+}
+
+.fusion__compare-col--result {
+  border-top-color: var(--c-primary);
+  background: var(--c-primary-light);
+}
+
+.fusion__compare-role {
+  margin-top: 4px;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  line-height: 1.7;
+}
+
+.fusion__compare-list {
+  list-style: none;
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fusion__compare-list li {
+  position: relative;
+  padding-left: 16px;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.7;
+}
+
+.fusion__compare-list li::before {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+}
+
+.fusion__compare-list li.is-pro::before {
+  content: '＋';
+  color: var(--c-normal);
+}
+
+.fusion__compare-list li.is-con::before {
+  content: '－';
+  color: var(--c-warning);
+}
+
+.fusion__compare-foot {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px dashed var(--c-primary-border);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.75;
+}
+
+/* ==========================================================================
+   响应式
+   ========================================================================== */
+
+@media (max-width: 1560px) {
+  .fusion__top {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .fusion__top > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1100px) {
+  .fusion__top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fusion__compare {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fusion__spec-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
