@@ -1,0 +1,6 @@
+/**
+ * 工业监控平台全局样式入口。
+ * 设计令牌在 tokens.css，基础排版在 base.css，组件样式在各页面/组件自己的 css 文件。
+ */
+import './styles/tokens.css'
+import './styles/base.css'

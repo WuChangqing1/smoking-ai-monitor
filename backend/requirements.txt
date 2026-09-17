@@ -1,0 +1,11 @@
+# 烟厂制丝线物流智能监控与多模态预警平台 - 后端依赖
+#
+# 安装：conda activate smoking && pip install -r requirements.txt
+# 原则：依赖从简。数据库用标准库 sqlite3，不引入 ORM / 向量库 / 消息队列。
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# 开发与测试（部署时可去掉）
+httpx==0.28.1
+pytest==8.3.4

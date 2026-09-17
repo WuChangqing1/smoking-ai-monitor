@@ -1,0 +1,73 @@
+# 烟厂制丝线物流智能监控平台 —— 后端 systemd 服务单元
+#
+# 有两种用法：
+#
+# A. 系统级（需要 sudo）
+#      sudo cp deployment/systemd/smoking-monitor-api.service /etc/systemd/system/
+#      # 按实际情况修改 User / WorkingDirectory / ExecStart
+#      sudo systemctl daemon-reload
+#      sudo systemctl enable --now smoking-monitor-api
+#
+# B. 用户级（无 sudo 权限时）
+#      mkdir -p ~/.config/systemd/user
+#      cp deployment/systemd/smoking-monitor-api.service ~/.config/systemd/user/
+#      # 把下面 [Service] 中的 User= 一行删掉，并把路径改成 $HOME 下的实际路径
+#      systemctl --user daemon-reload
+#      systemctl --user enable --now smoking-monitor-api
+#      loginctl enable-linger "$USER"     # 注销后仍保持运行
+#
+# 完全没有 systemd 权限时改用 tmux：
+#      tmux new -d -s smoking 'cd ~/apps/smoking-monitor/backend && \
+#        ../venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 18080'
+
+[Unit]
+Description=Smoking Line Logistics Monitoring API (FastAPI)
+Documentation=file:///var/www/smoking-monitor/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# ---- 按部署实际用户修改（用户级服务请删除本行）----
+User=www-data
+Group=www-data
+
+# ---- 部署目录（按实际路径修改）----
+WorkingDirectory=/var/www/smoking-monitor/backend
+
+# ---- 启动命令：只监听回环地址，由 Nginx 反代对外 ----
+ExecStart=/var/www/smoking-monitor/venv/bin/uvicorn app.main:app \
+    --host 127.0.0.1 \
+    --port 18080 \
+    --workers 1 \
+    --log-level info
+
+# ---- 敏感配置走环境变量文件，不写进仓库 ----
+# 文件中可放 SMOKING_PORT / SMOKING_CORS_ORIGINS / SMOKING_DB_PATH 等
+# 该文件权限建议 600，且不得提交到 Git
+EnvironmentFile=-/etc/smoking-monitor/api.env
+
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+
+# ---- 异常自动重启 ----
+Restart=always
+RestartSec=3
+StartLimitIntervalSec=0
+TimeoutStopSec=15
+KillSignal=SIGINT
+
+# ---- 基础加固 ----
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/var/www/smoking-monitor/backend/data
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=smoking-monitor-api
+
+[Install]
+WantedBy=multi-user.target
