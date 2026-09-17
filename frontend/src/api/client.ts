@@ -13,6 +13,7 @@ import type {
   AlarmRecord,
   Device,
   KnowledgeEvent,
+  MonitorPoint,
   Paged,
   PlatformMeta,
   Prediction,
@@ -88,8 +89,8 @@ export const api = {
   /** 系统运行状态 */
   systemStatus: () => request<SystemStatus>('/api/system/status'),
 
-  /** 实时快照（含滚动窗口样本） */
-  realtime: () => request<RealtimeSnapshot>('/api/realtime'),
+  /** 实时快照（含滚动窗口样本）。points 控制趋势窗口点数，后端限制为 10~180。 */
+  realtime: (points = 120) => request<RealtimeSnapshot>(`/api/realtime${toQuery({ points })}`),
 
   /** 实时历史样本 */
   realtimeHistory: (limit = 120) =>
@@ -97,6 +98,9 @@ export const api = {
 
   /** 设备列表 */
   devices: () => request<Device[]>('/api/devices'),
+
+  /** 监控点位 */
+  monitorPoints: () => request<MonitorPoint[]>('/api/monitor-points'),
 
   /** 报警列表 */
   alarms: (query: TraceQuery = {}) => request<Paged<AlarmRecord>>(`/api/alarms${toQuery(query)}`),

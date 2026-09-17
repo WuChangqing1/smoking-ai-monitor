@@ -148,6 +148,9 @@ class RealtimeSnapshotOut(BaseModel):
     risk: RiskReadingOut
     fusion: FusionReadingOut
     samples: list[SimSampleOut] = Field(description="滚动窗口内的降采样历史（60~180 点）")
+    sample_interval_seconds: float = Field(
+        description="历史序列的降采样间隔（秒）。内部 10 Hz 采样，对外按此间隔抽样。"
+    )
 
 
 # ---- 设备 -------------------------------------------------------------------

@@ -124,6 +124,7 @@ class TestRealtime:
             "risk",
             "fusion",
             "samples",
+            "sample_interval_seconds",
         ):
             assert field in body, f"缺少字段 {field}"
 
@@ -190,6 +191,20 @@ class TestRealtime:
         assert last["radar_filtered"] == pytest.approx(body["radar"]["distance"], abs=1e-3)
         # 快照的风险指数保留 1 位小数，样本保留 2 位，取 0.1 容差
         assert last["risk_index"] == pytest.approx(body["risk"]["index"], abs=0.1)
+
+    def test_sample_interval_reflects_downsampling(self, client: TestClient) -> None:
+        """降采样间隔要如实反映 10 Hz 原始采样被抽稀的倍数。
+
+        1200 个原始点抽成 120 个 → 每约 10 个点取一个 → 约 1.0 s。
+        """
+        body = client.get("/api/realtime?points=120").json()
+        interval = body["sample_interval_seconds"]
+        assert 0.9 <= interval <= 1.2, interval
+
+        # 点数越多，间隔越小
+        dense = client.get("/api/realtime?points=180").json()["sample_interval_seconds"]
+        sparse = client.get("/api/realtime?points=60").json()["sample_interval_seconds"]
+        assert dense < sparse
 
     def test_history_endpoint_respects_limit(self, client: TestClient) -> None:
         assert len(client.get("/api/realtime/history?limit=60").json()) == 60

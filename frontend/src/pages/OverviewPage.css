@@ -115,3 +115,139 @@
 .overview__lower {
   min-width: 0;
 }
+
+/* ==========================================================================
+   数据更新中断提示（轻量，不阻塞页面）
+   ========================================================================== */
+
+.overview__stale {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px var(--sp-4);
+  border: 1px solid #ecc9a0;
+  border-left: 3px solid var(--c-warning);
+  border-radius: var(--r-sm);
+  background: var(--c-warning-bg);
+  color: #a35c05;
+  font-size: var(--fs-sm);
+}
+
+.overview__stale svg {
+  flex-shrink: 0;
+}
+
+.overview__stale-detail {
+  color: #b8863f;
+  font-size: var(--fs-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   雷视联动摘要
+   ========================================================================== */
+
+.overview__fusion-verdict {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-3);
+  margin-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.overview__fusion-label {
+  font-size: var(--fs-base);
+  color: var(--c-text-sub);
+}
+
+.overview__fusion-verdict .badge {
+  height: 24px;
+  padding: 0 12px;
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.overview__fusion-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-5);
+}
+
+.overview__fusion-col {
+  min-width: 0;
+}
+
+.overview__fusion-text {
+  font-size: var(--fs-base);
+  color: var(--c-text-sub);
+  line-height: 1.75;
+}
+
+.overview__fusion-reason {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+  border-left: 3px solid var(--c-primary-border);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.8;
+}
+
+/* ==========================================================================
+   设备状态概览
+   ========================================================================== */
+
+.overview__device-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-5);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface-alt);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.overview__device-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.overview__device-table-wrap {
+  max-height: 218px;
+  overflow-y: auto;
+}
+
+.overview__device-table-wrap .data-table th,
+.overview__device-table-wrap .data-table td {
+  padding: 7px var(--sp-4);
+  font-size: var(--fs-sm);
+}
+
+.overview__device-empty {
+  text-align: center;
+  color: var(--c-text-muted);
+  padding: var(--sp-5) !important;
+}
+
+.overview__device-more {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px var(--sp-4);
+  border-top: 1px solid var(--c-border);
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+
+@media (max-width: 1200px) {
+  .overview__fusion-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-3);
+  }
+}

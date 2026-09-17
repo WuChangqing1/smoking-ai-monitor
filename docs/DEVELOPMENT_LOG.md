@@ -138,4 +138,41 @@
 （5 秒样本时间推进 5.00 s），`/api/detection/stop` 后数据完全冻结，
 `reset` 回到 normal，6 组只读接口全部 200。
 
+**Commit**：`2c8600b08565fe647bd72a6b0760e2daf2b81f93`
+（`feat: add realtime simulation backend` → 已推送）
+
+---
+
+## 轮次 3-B — 综合监控首页接入真实数据
+
+**完成内容**
+
+- `AppLayout` 统一轮询：`/api/system/status` 1.5 s、`/api/realtime` 1.0 s、`/api/devices` 一次
+- `components/chartOptions.ts`：雷达距离趋势、堆积风险趋势、预测曲线三套工业风 option
+- `OverviewPage` 重写为完全由后端驱动
+- 后端 `/api/realtime` 新增 `sample_interval_seconds`，如实标注趋势图时间跨度
+
+**关键决策**
+
+1. **前端零业务数据**：页面不再有任何派生或伪造的数值，全部来自引擎快照；
+   连"数据更新于 xx:xx:xx"都取自成功响应时间。
+2. **图表不重建实例**：`<Chart>` 持有 ECharts 实例，option 变化只 `setOption`，
+   配合 `ResizeObserver` 自适应；滚动更新因此是平滑的。
+3. **趋势窗口固定 120 点**：由后端降采样后返回，前端不做累积，
+   内存不随时间增长；X 轴按真实采样时刻标注（"最近约 2 分钟"）。
+4. **雷达图标注三条信息**：当前值打点、基准线 0.72 m（蓝灰虚线）、
+   报警阈值 0.58 m（红虚线，取自资料中的真实报警值）。
+5. **风险图颜色跟随等级**而非彩虹渐变：低=绿、中=蓝灰、高=橙、严重=红，
+   并画出 30/55/80 三条等级分界参考线。
+6. **数据中断不清屏**：复用已有的 `useFetch`（失败时保留上次成功数据），
+   页面顶部只加一条橙色轻提示"数据更新暂时中断"，不白屏。
+
+**未完成事项**
+
+- 雷视联动页仍为占位（轮次 3-C）。
+
+**验证**：`tsc + vite build` 通过（617 模块，无警告）；后端 `pytest` **110 passed**；
+前后端联调通过 Vite 代理验证 `/api/system/status`、`/api/realtime`、`/api/devices` 全部可达，
+静态资源与模块转译正常，四个演示场景下 `realtime.sim_state` 与 `system.sim_state` 始终一致。
+
 **Commit**：`待填`

@@ -57,6 +57,13 @@ def realtime(
     samples = engine.history(points)
     point = device_service.primary_point()
 
+    # 降采样间隔：让前端能如实标注趋势图的时间跨度，而不是靠猜
+    interval = (
+        round((samples[-1].ts - samples[0].ts) / (len(samples) - 1), 3)
+        if len(samples) > 1
+        else 0.0
+    )
+
     return RealtimeSnapshotOut(
         ts=snapshot.ts,
         monitor_point=MonitorPointOut(**point),
@@ -109,6 +116,7 @@ def realtime(
             confidence=snapshot.fusion.confidence,
         ),
         samples=[_sample_out(s) for s in samples],
+        sample_interval_seconds=interval,
     )
 
 

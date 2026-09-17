@@ -11,7 +11,7 @@ import Sidebar from '../components/Sidebar'
 import { NAV_ITEMS, useHashRoute, type PageId } from './navigation'
 import { api } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
-import type { PlatformMeta, SystemStatus } from '../types'
+import type { Device, PlatformMeta, RealtimeSnapshot, SystemStatus } from '../types'
 import OverviewPage from '../pages/OverviewPage'
 import VideoPage from '../pages/VideoPage'
 import FusionPage from '../pages/FusionPage'
@@ -24,6 +24,10 @@ import './AppLayout.css'
 
 /** 系统状态轮询间隔：比赛演示优先稳定，1.5s 足够实时且压力很小 */
 const STATUS_POLL_MS = 1500
+/** 实时数据轮询间隔：引擎内部 10 Hz 演化，浏览器按约 1 s 刷新 UI 即可 */
+const REALTIME_POLL_MS = 1000
+/** 趋势窗口点数：只保留最近 120 点，杜绝无限增长 */
+const TREND_POINTS = 120
 
 export default function AppLayout() {
   const [page, navigate] = useHashRoute()
@@ -31,6 +35,10 @@ export default function AppLayout() {
 
   const status = useFetch<SystemStatus>(api.systemStatus, { intervalMs: STATUS_POLL_MS })
   const meta = useFetch<PlatformMeta>(api.meta, {})
+  const realtime = useFetch<RealtimeSnapshot>(() => api.realtime(TREND_POINTS), {
+    intervalMs: REALTIME_POLL_MS,
+  })
+  const devices = useFetch<Device[]>(api.devices, {})
 
   const offline = Boolean(status.error) && status.data === null
 
@@ -55,7 +63,16 @@ export default function AppLayout() {
   }, [status.data?.today_warnings])
 
   const pages: Record<PageId, JSX.Element> = {
-    overview: <OverviewPage status={status.data} statusError={status.error} onNavigate={handleNavigate} />,
+    overview: (
+      <OverviewPage
+        status={status.data}
+        statusError={status.error}
+        realtime={realtime.data}
+        realtimeError={realtime.error}
+        devices={devices.data ?? []}
+        onNavigate={handleNavigate}
+      />
+    ),
     video: <VideoPage meta={meta.data} />,
     fusion: <FusionPage />,
     alarms: <AlarmsPage />,

@@ -93,11 +93,13 @@ export interface RadarReading {
 
 /** 视觉 AI 实时数据 */
 export interface VisionReading {
-  /** 状态文案，例如「正常」「疑似物料堆积」 */
+  /** 状态文案，例如「正常输送」「疑似物料堆积」 */
   status: string
-  /** 检测类别 */
+  /** 检测类别代码，例如 normal_conveying */
   label: string
-  /** 置信度 0~1 */
+  /** 检测类别中文描述 */
+  label_text: string
+  /** 置信度 0~1（概率模型输出，不代表准确率） */
   confidence: number
   /** 输送区域物料覆盖率 0~1 */
   coverage: number
@@ -113,6 +115,10 @@ export interface EnvironmentReading {
   conveyor_speed: number
   /** 输送速度基准值 (m/s) */
   conveyor_speed_baseline: number
+  /** 设备负载 0~100 */
+  equipment_load: number
+  /** 物料覆盖率 0~1（与视觉覆盖率同源） */
+  material_coverage: number
 }
 
 /** 风险指数 */
@@ -144,7 +150,10 @@ export interface RealtimeSample {
   /** 相对时间标签，例如 13:34:16 */
   label: string
   sim_state: SimState
+  /** 滤波前的测量值 (m) */
   radar_distance: number
+  /** 滤波后的测距 (m)，与快照上的 radar.distance 对应 */
+  radar_filtered: number
   risk_index: number
   vision_coverage: number
   vision_confidence: number
@@ -167,6 +176,8 @@ export interface RealtimeSnapshot {
   fusion: FusionReading
   /** 滚动窗口内的最近样本（后端限制长度，避免无限增长） */
   samples: RealtimeSample[]
+  /** 历史序列的降采样间隔（秒）。内部 10 Hz 采样，对外按此间隔抽样。 */
+  sample_interval_seconds: number
 }
 
 /** 监控点 */
