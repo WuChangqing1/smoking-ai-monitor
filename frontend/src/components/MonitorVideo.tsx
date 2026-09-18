@@ -2,8 +2,9 @@
  * 监控画面组件 —— 视频优先，静态图回退。
  *
  * 关键约定（见 README 第 7 节）：
- *   固定路径 /videos/main-monitor.mp4，把最终视频放到
- *   frontend/public/videos/main-monitor.mp4 即可自动生效，**不需要改业务代码**。
+ *   把最终视频放到 frontend/public/videos/main-monitor.mp4 即可自动生效，
+ *   **不需要改业务代码**。这里使用相对路径（不带前导斜杠），
+ *   以便平台部署在根路径或子路径（如 /smoking/）下都能正确加载。
  *
  * 回退策略分两层，缺一层都不够稳：
  *   1. **先探测**：对视频路径发 HEAD 请求，确认返回的确实是视频类型。
@@ -19,10 +20,10 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import './MonitorVideo.css'
 
-/** 固定视频路径：唯一替换约定 */
-export const MONITOR_VIDEO_SRC = '/videos/main-monitor.mp4'
+/** 固定视频路径：唯一替换约定（相对路径，便于部署在任意 URL 前缀下） */
+export const MONITOR_VIDEO_SRC = 'videos/main-monitor.mp4'
 /** 静态回退画面（由 检测图片.png 生成） */
-export const MONITOR_FALLBACK_SRC = '/images/main-monitor-fallback.png'
+export const MONITOR_FALLBACK_SRC = 'images/main-monitor-fallback.png'
 
 interface MonitorVideoProps {
   /** 画面左上角叠加的设备标识，例如 "Camera 01" */

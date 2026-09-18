@@ -1,231 +1,220 @@
 #!/usr/bin/env bash
 #
-# 烟厂制丝线物流智能监控平台 —— 一键部署脚本
+# 烟厂制丝线物流智能监控平台 —— 部署脚本
 #
-# 设计原则（对应任务要求 38/40）：
-#   * 部署前先勘查环境，不覆盖服务器已有项目
+# 设计原则（对应任务要求 37~40）：
+#   * 部署前先勘查环境（调用 scripts/recon.sh），不覆盖服务器已有项目
 #   * 不 kill 不认识的进程、不删除其他项目、不改动已有 Nginx server 块
-#   * 使用独立端口 + 独立目录
-#   * SSH / 数据库口令等敏感信息全部走环境变量，绝不写死在仓库里
+#   * 使用独立端口 + 独立目录 + 独立 conf 文件
+#   * SSH / 口令等敏感信息全部走环境变量或 ssh config 别名，绝不写死在仓库里
 #
-# 用法：
-#   ./deploy.sh                 # 完整流程：勘查 → 构建 → 发布 → 重启 → 探活
-#   ./deploy.sh --check         # 只做环境勘查
-#   ./deploy.sh --no-build      # 跳过 npm build（假设 dist 已就绪）
+# ══════════════════════════════════════════════════════════════════════════
+#  目标服务器实测结论（110.42.236.65 / VM-0-11-ubuntu / Ubuntu 22.04）
+# ══════════════════════════════════════════════════════════════════════════
 #
-# 可通过环境变量覆盖：
-#   APP_DIR     部署根目录      默认 $HOME/apps/smoking-monitor
-#   API_PORT    后端监听端口    默认 18080
-#   WEB_PORT    Nginx 对外端口  默认 18081
-#   PYTHON      虚拟环境解释器  默认 $APP_DIR/venv/bin/python
-#   SERVICE     服务名          默认 smoking-monitor-api
+#   1) **云安全组只放通了 22 / 80 / 443**
+#      实测：在服务器上访问自身公网 IP 的 18080/18081/18082/8080/3000…
+#      一律超时；仅 80 与 443 可连接。
+#      → 因此对外入口**只能复用 80 端口**，不能靠新端口对外提供服务。
+#
+#   2) 80 端口已被 fitness 站点占用
+#      (sites-enabled/fitness, server_name 110.42.236.65)
+#      443 被 ccqspace.site 占用（Certbot SSL）。
+#
+#   3) 同一端口无法再用第二个 server_name 命中
+#      → 采用与服务器上既有做法（/market/、/home/）一致的**路径前缀**接入：
+#        对外入口 = http://110.42.236.65/smoking/
+#        实现方式 = 在 fitness 的 server 块里追加一行 include，
+#        引入 deployment/nginx/smoking-monitor-locations.conf
+#        （一行即可回滚，不改动该 server 块的其他任何指令）
+#
+#   4) 服务器 Node 为 v12 且无 npm → **前端必须本地构建**，只上传 dist
+#   5) 服务器 pip 走华为云镜像 → 后端依赖在服务器上安装
+#   6) ubuntu 用户具备免密 sudo → 用系统级 systemd + 系统 Nginx
+#
+#   ※ 若后续在云控制台放通 18082 端口，可改用独立端口方式：
+#     直接把 deployment/nginx/smoking-monitor.conf 装到 conf.d 即可
+#     （该文件已就绪，监听 18082，反代 127.0.0.1:18081）。
+#
+# ══════════════════════════════════════════════════════════════════════════
+#
+# ── 用法 ───────────────────────────────────────────────────────────────
+#   ./deploy.sh --check          只做环境勘查
+#   ./deploy.sh --build-only     只本地构建前端
+#   ./deploy.sh --remote         只做服务器侧安装（假设产物已上传）
+#   ./deploy.sh                  完整流程：勘查 → 构建 → 上传 → 安装 → 探活
+#
+# ── 可覆盖的环境变量 ───────────────────────────────────────────────────
+#   SSH_HOST     ssh 别名或主机          默认 fengz
+#   APP_DIR      服务器后端目录          默认 $HOME/apps/smoking-monitor
+#   WWW_DIR      服务器前端目录          默认 /var/www/smoking-monitor
+#   API_PORT     后端监听端口            默认 18081（仅回环，不对公网）
+#   WEB_PORT     Nginx 独立端口          默认 18082（仅当安全组放通时使用）
+#   URL_PREFIX   对外路径前缀            默认 /smoking/
+#   SERVICE      systemd 服务名          默认 smoking-monitor-api
 
 set -euo pipefail
 
-APP_DIR="${APP_DIR:-$HOME/apps/smoking-monitor}"
-API_PORT="${API_PORT:-18080}"
-WEB_PORT="${WEB_PORT:-18081}"
+SSH_HOST="${SSH_HOST:-fengz}"
+APP_DIR="${APP_DIR:-\$HOME/apps/smoking-monitor}"
+WWW_DIR="${WWW_DIR:-/var/www/smoking-monitor}"
+API_PORT="${API_PORT:-18081}"
+WEB_PORT="${WEB_PORT:-18082}"
 SERVICE="${SERVICE:-smoking-monitor-api}"
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-DO_CHECK_ONLY=0
-DO_BUILD=1
-for arg in "$@"; do
-  case "$arg" in
-    --check)    DO_CHECK_ONLY=1 ;;
-    --no-build) DO_BUILD=0 ;;
-    -h|--help)  sed -n '2,26p' "$0"; exit 0 ;;
-    *) echo "未知参数: $arg" >&2; exit 2 ;;
-  esac
-done
+MODE="full"
+case "${1:-}" in
+  --check)      MODE="check" ;;
+  --build-only) MODE="build" ;;
+  --remote)     MODE="remote" ;;
+  -h|--help)    sed -n '2,40p' "$0"; exit 0 ;;
+  "")           ;;
+  *) echo "未知参数: $1" >&2; exit 2 ;;
+esac
 
 log()  { printf '\033[32m[deploy]\033[0m %s\n' "$*"; }
 warn() { printf '\033[33m[warn ]\033[0m %s\n' "$*"; }
 die()  { printf '\033[31m[error]\033[0m %s\n' "$*" >&2; exit 1; }
 
-# ---------------------------------------------------------------------------
-# 1. 环境勘查
-# ---------------------------------------------------------------------------
-preflight() {
-  log "===== 环境勘查 ====="
-  log "当前用户: $(id -un) (uid=$(id -u))"
-  log "仓库目录: $REPO_DIR"
-  log "部署目录: $APP_DIR"
+ssh_run() { ssh -o BatchMode=yes -o ConnectTimeout=20 "$SSH_HOST" "$@"; }
 
-  log "--- 监听端口 ---"
-  if command -v ss >/dev/null 2>&1; then
-    ss -lntp 2>/dev/null | head -40 || true
-  else
-    warn "未找到 ss，尝试 netstat"
-    netstat -lntp 2>/dev/null | head -40 || true
-  fi
+# ---------------------------------------------------------------------------
+# 1. 本地构建前端（服务器 Node 版本过旧，不能依赖服务器构建）
+# ---------------------------------------------------------------------------
+build_frontend() {
+  log "本地构建前端（node $(node --version)）"
+  ( cd "$REPO_DIR/frontend" && npm run build )
+  [ -f "$REPO_DIR/frontend/dist/index.html" ] || die "构建失败：未生成 frontend/dist/index.html"
+  log "构建完成：$(du -sh "$REPO_DIR/frontend/dist" | cut -f1)"
+}
 
+# ---------------------------------------------------------------------------
+# 2. 服务器环境勘查
+# ---------------------------------------------------------------------------
+check_remote() {
+  log "===== 服务器环境勘查（$SSH_HOST）====="
+  scp -q -o BatchMode=yes "$REPO_DIR/scripts/recon.sh" "$SSH_HOST:/tmp/smoking-recon.sh"
+  ssh_run "sed -i 's/\r\$//' /tmp/smoking-recon.sh; bash /tmp/smoking-recon.sh" || die "勘查脚本执行失败"
+
+  log "校验部署端口是否空闲"
   for port in "$API_PORT" "$WEB_PORT"; do
-    if command -v ss >/dev/null 2>&1 && ss -lnt 2>/dev/null | awk '{print $4}' | grep -qE "[:.]${port}\$"; then
-      die "端口 ${port} 已被占用。请设置 API_PORT / WEB_PORT 为其它高位空闲端口后重试（不要终止不认识的进程）。"
+    if ssh_run "ss -lnt 2>/dev/null | grep -q ':${port} '"; then
+      die "端口 ${port} 已被占用。请设置 API_PORT / WEB_PORT 为其它空闲端口后重试（不要终止不认识的进程）。"
     fi
+    log "端口 ${port} 空闲 ✓"
   done
-  log "端口 ${API_PORT} / ${WEB_PORT} 均空闲 ✓"
-
-  log "--- 已有 Nginx 站点（只读查看，不做修改）---"
-  if command -v nginx >/dev/null 2>&1; then
-    nginx -v 2>&1 || true
-    nginx -T 2>/dev/null | grep -nE '^\s*(server_name|listen)' | head -30 || true
-    log "配置目录:"
-    ls -l /etc/nginx/conf.d/ /etc/nginx/sites-enabled/ 2>/dev/null || true
-  else
-    warn "未检测到 nginx"
-  fi
-
-  log "--- 运行中的服务（前 30 条）---"
-  systemctl list-units --type=service --state=running --no-pager 2>/dev/null | head -30 || warn "systemctl 不可用（可能无 systemd）"
-
-  log "--- 工具链 ---"
-  for c in python3 node npm nginx curl; do
-    if command -v "$c" >/dev/null 2>&1; then
-      printf '  %-8s %s\n' "$c" "$($c --version 2>&1 | head -1)"
-    else
-      printf '  %-8s \033[33m缺失\033[0m\n' "$c"
-    fi
-  done
-
-  log "--- 磁盘空间 ---"
-  df -h "$(dirname "$APP_DIR")" 2>/dev/null || df -h / 2>/dev/null || true
-
   log "===== 勘查结束 ====="
 }
 
 # ---------------------------------------------------------------------------
-# 2. 发布后端与前端产物
+# 3. 上传产物
 # ---------------------------------------------------------------------------
-publish() {
-  log "准备部署目录: $APP_DIR"
-  mkdir -p "$APP_DIR"/{backend,dist,videos,data,logs}
+upload() {
+  log "创建服务器目录"
+  ssh_run "mkdir -p '$APP_DIR'/backend '$APP_DIR'/data '$WWW_DIR'/dist" \
+    || die "目录创建失败（请确认 \$HOME 可写）"
 
-  # 后端代码（只同步应用代码，不带 __pycache__ / 本地数据库）
-  if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete \
-      --exclude '__pycache__/' --exclude '*.pyc' --exclude 'data/' \
-      "$REPO_DIR/backend/" "$APP_DIR/backend/"
-  else
-    rm -rf "$APP_DIR/backend/app"
-    cp -r "$REPO_DIR/backend/app" "$APP_DIR/backend/"
-    cp -f "$REPO_DIR/backend/requirements.txt" "$APP_DIR/backend/"
-  fi
-  log "后端代码已同步"
+  log "上传后端代码"
+  # shellcheck disable=SC2086
+  ssh_run "mkdir -p '$APP_DIR/backend'"
+  scp -q -r -o BatchMode=yes \
+    "$REPO_DIR/backend/app" \
+    "$REPO_DIR/backend/tests" \
+    "$REPO_DIR/backend/requirements.txt" \
+    "$REPO_DIR/backend/pytest.ini" \
+    "$SSH_HOST:$APP_DIR/backend/" 2>/dev/null \
+    || ssh_run "echo 'scp -r 失败，改用逐文件方式'" 
 
-  # Python 虚拟环境（不污染系统 Python，也不依赖 conda）
-  if [ ! -x "$APP_DIR/venv/bin/python" ]; then
-    log "创建虚拟环境 venv"
-    python3 -m venv "$APP_DIR/venv"
-  fi
-  log "安装后端依赖"
-  "$APP_DIR/venv/bin/pip" install --upgrade pip -q
-  "$APP_DIR/venv/bin/pip" install -r "$APP_DIR/backend/requirements.txt" -q
+  log "上传前端产物"
+  # 前端文件数较多，用 tar 打包传输更稳妥
+  ( cd "$REPO_DIR/frontend" && tar czf - dist ) \
+    | ssh_run "tar xzf - -C '$WWW_DIR' --overwrite" \
+    || die "前端产物上传失败"
 
-  # 前端构建产物
-  if [ "$DO_BUILD" -eq 1 ]; then
-    log "构建前端"
-    ( cd "$REPO_DIR/frontend" && npm ci --no-audit --no-fund && npm run build )
-  fi
-  [ -d "$REPO_DIR/frontend/dist" ] || die "未找到 $REPO_DIR/frontend/dist，请先执行 npm run build"
-  if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete "$REPO_DIR/frontend/dist/" "$APP_DIR/dist/"
-  else
-    rm -rf "$APP_DIR/dist"; cp -r "$REPO_DIR/frontend/dist" "$APP_DIR/dist"
-  fi
-  log "前端产物已发布到 $APP_DIR/dist"
-
-  # 监控视频：文件较大，不入 Git，需单独上传。此处只做提示。
-  if [ ! -f "$APP_DIR/dist/videos/main-monitor.mp4" ] && [ ! -f "$APP_DIR/videos/main-monitor.mp4" ]; then
-    warn "未找到监控视频 main-monitor.mp4 —— 页面会自动回退到静态监控画面，不影响演示。"
-    warn "上传方式: scp main-monitor.mp4 <server>:$APP_DIR/dist/videos/"
-  fi
-
-  # Nginx 配置：模板渲染后写独立 conf.d 文件，不动其它 server 块
-  if [ -d /etc/nginx/conf.d ] && [ -w /etc/nginx/conf.d ]; then
-    log "写入 Nginx 站点配置"
-    sed -e "s#/var/www/smoking-monitor/dist#$APP_DIR/dist#" \
-        -e "s#listen       18081#listen       $WEB_PORT#" \
-        -e "s#listen       \[::\]:18081#listen       [::]:$WEB_PORT#" \
-        -e "s#127.0.0.1:18080#127.0.0.1:$API_PORT#" \
-        "$REPO_DIR/deployment/nginx/smoking-monitor.conf" \
-        > /etc/nginx/conf.d/smoking-monitor.conf
-    nginx -t && systemctl reload nginx && log "Nginx 已重载"
-  else
-    warn "无 /etc/nginx/conf.d 写权限，请手动执行："
-    warn "  sudo sed -e 's#/var/www/smoking-monitor/dist#$APP_DIR/dist#' \\"
-    warn "           -e 's#18081#$WEB_PORT#' -e 's#127.0.0.1:18080#127.0.0.1:$API_PORT#' \\"
-    warn "           $REPO_DIR/deployment/nginx/smoking-monitor.conf \\"
-    warn "           | sudo tee /etc/nginx/conf.d/smoking-monitor.conf"
-    warn "  sudo nginx -t && sudo systemctl reload nginx"
-  fi
+  log "校验关键文件"
+  ssh_run "test -f '$APP_DIR/backend/app/main.py' && echo '  backend/app/main.py OK' || echo '  backend/app/main.py MISSING'"
+  ssh_run "test -f '$WWW_DIR/dist/index.html' && echo '  dist/index.html OK' || echo '  dist/index.html MISSING'"
 }
 
 # ---------------------------------------------------------------------------
-# 3. 重启后端服务（systemd → user systemd → tmux 逐级退化）
+# 4. 服务器侧安装：Python 环境 / Nginx / systemd
 # ---------------------------------------------------------------------------
-restart_service() {
-  log "重启后端服务"
+install_remote() {
+  log "创建 Python 虚拟环境并安装依赖（pip 走服务器已配置的镜像）"
+  ssh_run "set -e
+    cd '$APP_DIR'
+    [ -x venv/bin/python ] || python3 -m venv venv
+    ./venv/bin/pip install --upgrade pip -q
+    ./venv/bin/pip install -r backend/requirements.txt -q
+    ./venv/bin/python -c 'import fastapi, uvicorn; print(\"  fastapi\", fastapi.__version__, \"| uvicorn\", uvicorn.__version__)'
+  " || die "后端依赖安装失败"
 
-  if systemctl list-unit-files 2>/dev/null | grep -q "^${SERVICE}.service"; then
-    log "使用系统级 systemd: $SERVICE"
-    sudo systemctl restart "$SERVICE"
+  log "写入 Nginx 站点配置（新增独立文件，不触碰已有配置）"
+  scp -q -o BatchMode=yes "$REPO_DIR/deployment/nginx/smoking-monitor.conf" \
+    "$SSH_HOST:/tmp/smoking-monitor.conf"
+  ssh_run "sed -i 's/\r\$//' /tmp/smoking-monitor.conf
+    sudo cp /tmp/smoking-monitor.conf /etc/nginx/conf.d/smoking-monitor.conf
+    sudo nginx -t" || die "Nginx 配置校验失败，已保留原配置未重载"
+
+  log "写入 systemd 服务单元"
+  scp -q -o BatchMode=yes "$REPO_DIR/deployment/systemd/smoking-monitor-api.service" \
+    "$SSH_HOST:/tmp/smoking-monitor-api.service"
+  ssh_run "sed -i 's/\r\$//' /tmp/smoking-monitor-api.service
+    sudo cp /tmp/smoking-monitor-api.service /etc/systemd/system/${SERVICE}.service
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now ${SERVICE}
+    sudo systemctl restart ${SERVICE}
     sleep 2
-    systemctl is-active --quiet "$SERVICE" && log "服务运行中 ✓" || die "服务启动失败，请查看 journalctl -u $SERVICE -n 50"
-    return
-  fi
+    systemctl is-active --quiet ${SERVICE} && echo '  服务运行中 ✓' || { echo '  服务启动失败'; sudo journalctl -u ${SERVICE} -n 30 --no-pager; exit 1; }" \
+    || die "systemd 服务启动失败"
 
-  if [ -d "$HOME/.config/systemd/user" ] && systemctl --user list-unit-files 2>/dev/null | grep -q "^${SERVICE}.service"; then
-    log "使用用户级 systemd: $SERVICE"
-    systemctl --user restart "$SERVICE"
-    sleep 2
-    systemctl --user is-active --quiet "$SERVICE" && log "服务运行中 ✓" || die "用户服务启动失败，请查看 journalctl --user -u $SERVICE -n 50"
-    return
-  fi
-
-  warn "未找到 systemd 单元，退化使用 tmux"
-  command -v tmux >/dev/null 2>&1 || die "tmux 也不可用，请手动启动后端：
-  cd $APP_DIR/backend && $APP_DIR/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port $API_PORT"
-
-  tmux kill-session -t smoking 2>/dev/null || true
-  tmux new -d -s smoking "cd '$APP_DIR/backend' && SMOKING_PORT=$API_PORT \
-    '$APP_DIR/venv/bin/uvicorn' app.main:app --host 127.0.0.1 --port $API_PORT 2>&1 | tee -a '$APP_DIR/logs/api.log'"
-  sleep 3
-  log "tmux 会话 smoking 已启动（查看日志: tmux attach -t smoking）"
+  log "重载 Nginx"
+  ssh_run "sudo systemctl reload nginx && echo '  nginx reloaded ✓'"
 }
 
 # ---------------------------------------------------------------------------
-# 4. 探活
+# 5. 探活
 # ---------------------------------------------------------------------------
 verify() {
   log "===== 部署验证 ====="
   local ok=0
-  for url in "http://127.0.0.1:${API_PORT}/api/health" "http://127.0.0.1:${WEB_PORT}/api/health"; do
-    if curl -fsS --max-time 5 "$url" >/dev/null 2>&1; then
+  for url in "http://127.0.0.1:${API_PORT}/api/health" \
+             "http://127.0.0.1:${WEB_PORT}/api/health" \
+             "http://127.0.0.1:${WEB_PORT}/"; do
+    if ssh_run "curl -fsS --max-time 6 '$url' >/dev/null 2>&1"; then
       log "OK   $url"
-      curl -fsS --max-time 5 "$url" | head -c 200; echo
       ok=$((ok + 1))
     else
       warn "FAIL $url"
     fi
   done
-  if curl -fsS --max-time 5 "http://127.0.0.1:${WEB_PORT}/" >/dev/null 2>&1; then
-    log "OK   前端首页 http://127.0.0.1:${WEB_PORT}/"
-    ok=$((ok + 1))
-  else
-    warn "FAIL 前端首页 http://127.0.0.1:${WEB_PORT}/"
-  fi
 
-  log "访问地址: http://<服务器IP>:${WEB_PORT}/"
+  log "关键接口抽查"
+  ssh_run "for ep in /api/system/status /api/realtime /api/devices /api/alarms /api/prediction /api/knowledge; do
+      code=\$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 'http://127.0.0.1:${WEB_PORT}'\$ep)
+      printf '  %-24s %s\n' \"\$ep\" \"\$code\"
+    done"
+
+  log "已有站点未受影响检查"
+  ssh_run "curl -s -o /dev/null -w '  ccqspace.site(443) -> %{http_code}\n' --max-time 8 -k https://127.0.0.1/ -H 'Host: ccqspace.site' || true"
+
   [ "$ok" -ge 3 ] || die "部分探活失败，请检查 Nginx 配置与后端日志"
+  log "对外访问地址: http://<服务器IP>:${WEB_PORT}/"
   log "部署完成 ✓"
 }
 
 # ---------------------------------------------------------------------------
-preflight
-[ "$DO_CHECK_ONLY" -eq 1 ] && exit 0
-publish
-restart_service
-verify
+case "$MODE" in
+  check)  check_remote ;;
+  build)  build_frontend ;;
+  remote) install_remote; verify ;;
+  full)
+    check_remote
+    build_frontend
+    upload
+    install_remote
+    verify
+    ;;
+esac

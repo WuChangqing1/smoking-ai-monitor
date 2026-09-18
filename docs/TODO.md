@@ -114,10 +114,25 @@
 
 ## 轮次 7：Linux 部署（Commit 10）
 
-- [ ] 部署前环境勘查（服务、端口、Nginx、目录）
-- [ ] Nginx 站点 + systemd（或 user systemd）服务
-- [ ] 部署脚本 + README 部署章节
-- [ ] 独立 URL 验证
+- [x] 部署前环境勘查（服务 / 端口 / Nginx / 目录 / 权限 / 出网）
+- [x] 发现云安全组只放通 22/80/443（实测：服务器访问自身公网 IP 超时）
+- [x] 后端部署到 `~/apps/smoking-monitor`（venv + systemd，自启 + 异常重启）
+- [x] 前端本地构建后上传 `/var/www/smoking-monitor/dist`
+- [x] 路径前缀接入 80 端口：新增 1 行 include + 2 个新文件，可一行回滚
+- [x] 前端改 `base: './'` + 静态资源相对路径，兼容根路径与子路径部署
+- [x] 修正陈旧 nginx worker 导致的 502
+- [x] 线上逐项验证（首页 / 资源 / 8 接口 / 实时数据 / 控制接口 / 自启）
+- [x] 已有站点回归验证（fitness 80、ccqspace.site 443 均不受影响）
+- [x] `deployment/README.md` + README 第 8 节按实测重写
+- [x] 服务器侧 `pytest` 121 passed（Python 3.10.12）
+
+**线上地址：http://110.42.236.65/smoking/**
+
+## 待办（后续可选）
+
+- [ ] 最终监控视频到位后放入 `frontend/public/videos/main-monitor.mp4` 并重新部署
+- [ ] 如需独立端口：云控制台放通 18082 后安装已就绪的 `deployment/nginx/smoking-monitor.conf`
+- [ ] 如需域名访问：添加 DNS A 记录（大陆服务器 80/443 需域名已备案）
 
 ## 待确认 / 风险
 

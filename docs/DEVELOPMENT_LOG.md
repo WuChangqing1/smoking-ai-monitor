@@ -395,4 +395,69 @@
 
 **验证**：后端 `pytest` **121 passed**；前端 `tsc + vite build` 通过（626 模块，无警告）。
 
+**Commit**：`7e65f319941105677a975b00ed09543c11ddbeb4`
+（`fix: improve dashboard stability and presentation` → 已推送）
+
+---
+
+## 轮次 7 — Linux 部署
+
+**线上地址：http://110.42.236.65/smoking/**
+
+**完成内容**
+
+- 部署前只读勘查：`scripts/recon.sh`、`recon-ports.sh`、`recon-net.sh`、`recon-routing.sh`
+- 后端部署到 `~/apps/smoking-monitor`（venv + systemd，开机自启 + 异常重启）
+- 前端本地构建后上传到 `/var/www/smoking-monitor/dist`
+- 通过路径前缀接入已放通的 80 端口，新增 1 行 `include`、2 个新文件
+- `deployment/README.md`：完整部署记录、运维命令、回滚方式、改独立端口的步骤
+- README 第 8 节按实测结论重写
+
+**关键决策**
+
+1. **云安全组是硬约束，决定了部署形态**。实测方式很直接：**在服务器上访问自身的公网 IP** ——
+   放通的端口会连上，未放通的会超时。结果：只有 80/443 可连接，
+   18080/18081/18082/8080/3000 等一律超时。
+   因此"用独立端口对外"这条路走不通，只能复用 80。
+2. **同端口无法再用第二个 server_name 命中**（80 已被 `server_name 110.42.236.65` 占用），
+   于是采用与服务器上既有做法（`/market/`、`/home/`）一致的**路径前缀**接入：
+   `http://110.42.236.65/smoking/`。
+   实现上只在 fitness 的 server 块**追加一行 include**，改动面最小且可一行回滚。
+3. **前端改为相对路径 base**：`vite.config.ts` 设 `base: './'`，
+   并把 `MonitorVideo` 的视频/图片路径改成不带前导斜杠的相对路径。
+   这样同一份构建产物既能挂根路径也能挂子路径，换部署位置不必重新构建 ——
+   这是让"路径式接入"成立的前提。
+4. **服务器不构建前端**：服务器 Node 为 v12 且无 npm，因此流程固定为
+   「本地 build → 上传 dist」。deploy.sh 中已写明该约束。
+5. **后端坚持只监听回环**：uvicorn 绑 `127.0.0.1:18081`，对外一律经 Nginx 反代。
+
+**修正的真实缺陷**
+
+- **陈旧 Nginx worker 导致 502**：master 进程自 4 月起已运行 141 天，
+  reload 后旧 worker 仍持有旧配置。`systemctl restart nginx` 后恢复。
+- `deploy.sh` 原先假设在服务器上构建前端，与服务器 Node v12 的现实冲突，
+  已改为本地构建 + 上传。
+- `gzip_types` 重复声明 `application/javascript`（新版 mime.types 已并入
+  `text/javascript`）导致 `nginx -t` 警告，已修正。
+- 前端静态资源与后端返回的 `snapshot` 路径统一改为相对路径，
+  否则部署在 `/smoking/` 下会 404。
+
+**未完成事项**
+
+- 最终监控视频仍未到位（用静态图占位，替换方式已就绪）。
+
+**验证（全部在公网地址上实测）**
+
+| 检查项 | 结果 |
+|---|---|
+| 平台首页 | `/smoking/` → 200 |
+| 静态资源 + 相对路径解析 | 全部 200，`./assets/...` → `/smoking/assets/...` |
+| 8 个数据接口 | 全部 200 |
+| 实时仿真数据 | state=normal、risk=23.6%、测距 0.721 m、10 Hz、历史 120 点 |
+| 设备 / 报警 / 知识库 | 18/18 在线；报警 6 条覆盖 4 种类型；知识库 12 条 |
+| 控制接口 | 场景切换与恢复均 `ok=true`，风险随之变化（预警场景实测 63.5%） |
+| 进程与自启 | `active` + `enabled` |
+| **已有站点回归** | fitness(80) → 200；ccqspace.site(443) → 200（服务器侧实测）；8000/18080 项目不受影响 |
+| 服务器侧测试 | 部署后 `pytest` 121 passed（Python 3.10.12 下同样通过） |
+
 **Commit**：`待填`

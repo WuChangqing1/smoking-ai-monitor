@@ -11,6 +11,12 @@ import react from '@vitejs/plugin-react'
  */
 export default defineConfig({
   plugins: [react()],
+  // 关键：base 用相对路径 './' 而不是默认的 '/'。
+  // 这样构建产物放在任意 URL 前缀下都能正确解析资源
+  // （例如部署在 http://host/smoking/ 时，assets 会解析为 /smoking/assets/...），
+  // 使平台既能挂在根路径，也能挂在子路径，无需为一个部署位置重新构建。
+  // 注意 CSS 与 JS 里引用静态资源必须用相对路径（见 MonitorVideo 的常量）。
+  base: './',
   server: {
     host: '127.0.0.1',
     port: 15173,

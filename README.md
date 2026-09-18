@@ -295,6 +295,9 @@ Git LFS / 部署时单独上传 / 保持忽略。任一种都**不改变**上述
 
 ## 8. Linux 部署
 
+> **已实际部署完成。** 线上地址：**http://110.42.236.65/smoking/**
+> 完整的部署记录、运维命令与回滚方式见 **`deployment/README.md`**。
+
 前置原则：**不覆盖服务器已有项目，不 kill 不认识的进程，不动已有 Nginx 配置。**
 
 ### 8.1 部署前环境勘查（必做）
@@ -311,61 +314,118 @@ ls -ld /var/www ~/ 2>/dev/null
 id
 ```
 
-据此选择一个**独立端口 + 独立目录 + 独立 server_name / location**。
-
-### 8.2 推荐部署结构
-
-```
-~/apps/smoking-monitor/          # 或 /var/www/smoking-monitor/
-├── dist/                        # 前端构建产物（frontend/dist）
-├── backend/                     # 后端代码
-├── venv/                        # Python 虚拟环境
-└── videos/main-monitor.mp4      # 监控视频（单独上传）
-```
-
-后端监听 `127.0.0.1:18080`（若被占用，改用其它高位端口并在 Nginx 中同步）。
-对外只暴露 Nginx 的独立端口或域名，后端不直接对外。
-
-### 8.3 Nginx
-
-配置模板见 `deployment/nginx/smoking-monitor.conf`：
-
-- 静态文件指向 `dist/`；
-- `location /api/` 反向代理到 `127.0.0.1:18080`；
-- 使用独立的 `listen` 端口或 `server_name`，**不修改服务器上已有的 server 块**。
+仓库提供了现成的只读勘查脚本，可直接推送执行：
 
 ```bash
-sudo cp deployment/nginx/smoking-monitor.conf /etc/nginx/conf.d/smoking-monitor.conf
+scp scripts/recon.sh <host>:/tmp/ && ssh <host> "bash /tmp/recon.sh"
+```
+
+### 8.2 本项目的勘查结论（决定了部署形态）
+
+对目标服务器 `110.42.236.65` 的实测结论：
+
+1. **云安全组只放通了 22 / 80 / 443** —— 实测在服务器上访问自身公网 IP 的
+   18080/18081/18082/8080 等端口**一律超时**，仅 80/443 可连接。
+   因此对外入口**只能复用 80 端口**。
+2. **80 端口已被 fitness 站点占用**、443 被 ccqspace.site 占用（Certbot SSL）；
+   18080 被 LLM API Platform 占用。
+3. 同一端口无法再用第二个 `server_name` 命中 →
+   采用与服务器上既有做法（`/market/`、`/home/`）一致的**路径前缀**接入。
+4. 服务器 Node 为 **v12 且无 npm** → **前端必须本地构建**，服务器只接收 `dist`。
+
+### 8.3 最终部署结构
+
+```
+http://110.42.236.65/smoking/          ← 平台入口（复用已放通的 80 端口）
+        ├── /smoking/          → /var/www/smoking-monitor/dist/   前端静态文件
+        ├── /smoking/assets/   → dist/assets/                     长缓存
+        ├── /smoking/images/   → dist/images/                     静态监控图
+        ├── /smoking/videos/   → dist/videos/                     监控视频（缺失自动回退）
+        └── /smoking/api/      → http://127.0.0.1:18081/api/      FastAPI 反代
+
+/home/ubuntu/apps/smoking-monitor/
+├── backend/   后端代码      ├── venv/   Python 虚拟环境      └── data/  SQLite
+```
+
+后端 uvicorn 只监听 `127.0.0.1:18081`，**不直接对外暴露**。
+
+`frontend/vite.config.ts` 设置 `base: './'`，构建产物使用相对路径引用资源，
+因此**同一份产物既能挂在根路径也能挂在子路径**，换部署位置无需重新构建。
+
+### 8.4 涉及的系统改动（全部可一行回滚）
+
+| 文件 | 动作 |
+|---|---|
+| `/etc/nginx/snippets/smoking-monitor-locations.conf` | 新增 |
+| `/etc/nginx/sites-available/fitness` | **追加 1 行 include**（其余指令未动） |
+| `/etc/systemd/system/smoking-monitor-api.service` | 新增 |
+
+> 没有修改任何已有 server 块的其他指令，没有删除任何文件，
+> 没有终止任何不认识的进程。
+
+### 8.5 后端常驻与异常重启
+
+使用 **systemd**（模板见 `deployment/systemd/smoking-monitor-api.service`），
+已 `enable` 开机自启，`Restart=always` 异常自动重启。
+无 sudo 权限时可退化为 **user systemd**（`systemctl --user`）或 **tmux**，
+模板中已写出三种方式的完整命令。
+
+### 8.6 重新部署（迭代更新）
+
+服务器无法构建前端，因此流程是「本地构建 → 上传」：
+
+```bash
+cd frontend && npm run build
+scp -r dist/* fengz:/tmp/smoking-dist/
+ssh fengz "rm -rf /var/www/smoking-monitor/dist && \
+           cp -r /tmp/smoking-dist /var/www/smoking-monitor/dist && \
+           sudo chmod -R a+rX /var/www/smoking-monitor"
+
+# 后端有改动时
+scp -r backend/app fengz:~/apps/smoking-monitor/backend/
+ssh fengz "sudo systemctl restart smoking-monitor-api"
+```
+
+或直接运行 `deployment/deploy.sh`（勘查 → 构建 → 上传 → 安装 → 探活）。
+
+### 8.7 运维
+
+```bash
+ssh fengz
+systemctl status smoking-monitor-api
+sudo journalctl -u smoking-monitor-api -f
+sudo systemctl restart smoking-monitor-api
+```
+
+### 8.8 如需改为独立端口
+
+若后续在云控制台放通 18082，直接安装已就绪的
+`deployment/nginx/smoking-monitor.conf` 即可获得完全独立的入口，
+无需改动本平台的任何代码：
+
+```bash
+sudo cp deployment/nginx/smoking-monitor.conf /etc/nginx/conf.d/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-### 8.4 后端常驻与异常重启
+### 8.9 部署验证结果（实测）
 
-优先 **systemd**（模板见 `deployment/systemd/smoking-monitor-api.service`）。
-**无 sudo 权限时**依次退化为 **user systemd**（`systemctl --user`）或 **tmux**：
+| 检查项 | 结果 |
+|---|---|
+| 平台首页 | `http://110.42.236.65/smoking/` → **200** |
+| 静态资源与相对路径解析 | 全部 **200**，`./assets/...` 正确解析到 `/smoking/assets/...` |
+| 8 个数据接口 | health / system-status / realtime / alarms / alarms-options / prediction / knowledge / monitor-points → 全部 **200** |
+| 实时仿真数据 | state=normal、risk=23.6%、测距 0.721 m、10 Hz 采集、历史 120 点 |
+| 设备 / 报警 / 知识库 | 在线设备 18/18；报警 6 条覆盖 4 种异常类型；知识库 12 条 |
+| 控制接口 | 演示场景切换与恢复 → `ok=true`，风险随之变化 |
+| 进程与自启 | `active` + `enabled` |
+| **已有站点回归** | fitness(80) → 200；ccqspace.site(443) → 200（服务器侧）；其他项目不受影响 |
 
-```bash
-# user systemd
-mkdir -p ~/.config/systemd/user
-cp deployment/systemd/smoking-monitor-api.service ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable --now smoking-monitor-api
-loginctl enable-linger "$USER"      # 允许用户服务在注销后继续运行
+### 8.10 域名访问（可选）
 
-# 或 tmux
-tmux new -d -s smoking 'cd ~/apps/smoking-monitor/backend && \
-  ../venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 18080'
-```
-
-一键部署脚本：`deployment/deploy.sh`（含环境勘查、构建、发布与探活，可重复执行）。
-
-### 8.5 部署验证
-
-```bash
-curl -s http://127.0.0.1:18080/api/health
-curl -s http://127.0.0.1:<nginx端口>/api/health
-curl -sI http://127.0.0.1:<nginx端口>/
-```
+腾讯云中国大陆服务器的 80/443 对外服务需要域名已备案，**直接用 IP 访问不受此限制**。
+当前用 IP + 路径访问已满足"评委直接打开即可查看"的要求；
+如需域名访问，添加 DNS A 记录后在 443 的 server 块复用同一 location 片段即可。
 
 ---
 

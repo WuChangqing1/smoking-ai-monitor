@@ -1,52 +1,51 @@
 # 烟厂制丝线物流智能监控平台 —— 后端 systemd 服务单元
 #
-# 有两种用法：
+# ── 目标服务器勘查结论（110.42.236.65 / VM-0-11-ubuntu）──────────────────
+#   用户 ubuntu (uid=1000) 具备免密 sudo，systemctl 可用 → 使用系统级 systemd。
+#   端口 18080 已被其他项目占用，因此本服务使用 18081，只监听回环地址。
 #
-# A. 系统级（需要 sudo）
-#      sudo cp deployment/systemd/smoking-monitor-api.service /etc/systemd/system/
-#      # 按实际情况修改 User / WorkingDirectory / ExecStart
-#      sudo systemctl daemon-reload
-#      sudo systemctl enable --now smoking-monitor-api
+# ── 安装 ───────────────────────────────────────────────────────────────
+#   sudo cp deployment/systemd/smoking-monitor-api.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now smoking-monitor-api
+#   systemctl status smoking-monitor-api
 #
-# B. 用户级（无 sudo 权限时）
-#      mkdir -p ~/.config/systemd/user
-#      cp deployment/systemd/smoking-monitor-api.service ~/.config/systemd/user/
-#      # 把下面 [Service] 中的 User= 一行删掉，并把路径改成 $HOME 下的实际路径
-#      systemctl --user daemon-reload
-#      systemctl --user enable --now smoking-monitor-api
-#      loginctl enable-linger "$USER"     # 注销后仍保持运行
-#
-# 完全没有 systemd 权限时改用 tmux：
-#      tmux new -d -s smoking 'cd ~/apps/smoking-monitor/backend && \
-#        ../venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 18080'
+# ── 无 sudo 时的替代方案 ────────────────────────────────────────────────
+#   A. 用户级 systemd：
+#        mkdir -p ~/.config/systemd/user
+#        cp <本文件> ~/.config/systemd/user/
+#        删除下面的 User= / Group= 两行
+#        systemctl --user daemon-reload && systemctl --user enable --now smoking-monitor-api
+#        loginctl enable-linger "$USER"
+#   B. tmux（连 systemd 都没有时）：
+#        tmux new -d -s smoking 'cd ~/apps/smoking-monitor/backend && \
+#          ../venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 18081'
 
 [Unit]
 Description=Smoking Line Logistics Monitoring API (FastAPI)
-Documentation=file:///var/www/smoking-monitor/README.md
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 
-# ---- 按部署实际用户修改（用户级服务请删除本行）----
-User=www-data
-Group=www-data
+# ---- 使用部署目录的属主，避免 SQLite 数据文件权限问题 ----
+User=ubuntu
+Group=ubuntu
 
-# ---- 部署目录（按实际路径修改）----
-WorkingDirectory=/var/www/smoking-monitor/backend
+# ---- 部署目录 ----
+WorkingDirectory=/home/ubuntu/apps/smoking-monitor/backend
 
 # ---- 启动命令：只监听回环地址，由 Nginx 反代对外 ----
-ExecStart=/var/www/smoking-monitor/venv/bin/uvicorn app.main:app \
+ExecStart=/home/ubuntu/apps/smoking-monitor/venv/bin/uvicorn app.main:app \
     --host 127.0.0.1 \
-    --port 18080 \
+    --port 18081 \
     --workers 1 \
     --log-level info
 
 # ---- 敏感配置走环境变量文件，不写进仓库 ----
-# 文件中可放 SMOKING_PORT / SMOKING_CORS_ORIGINS / SMOKING_DB_PATH 等
 # 该文件权限建议 600，且不得提交到 Git
-EnvironmentFile=-/etc/smoking-monitor/api.env
+EnvironmentFile=-/home/ubuntu/apps/smoking-monitor/api.env
 
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1
@@ -58,12 +57,11 @@ StartLimitIntervalSec=0
 TimeoutStopSec=15
 KillSignal=SIGINT
 
-# ---- 基础加固 ----
+# ---- 基础加固（保留用户可写部署目录，故不用 ProtectHome=read-only）----
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
-ProtectHome=read-only
-ReadWritePaths=/var/www/smoking-monitor/backend/data
+ReadWritePaths=/home/ubuntu/apps/smoking-monitor
 
 StandardOutput=journal
 StandardError=journal
