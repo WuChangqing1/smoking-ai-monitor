@@ -24,7 +24,23 @@ import DetectionOverlay from './DetectionOverlay'
 import './MonitorVideo.css'
 
 /** 固定视频路径：唯一替换约定（相对路径，便于部署在任意 URL 前缀下） */
-export const MONITOR_VIDEO_SRC = 'videos/main-monitor.mp4'
+export const MONITOR_VIDEO_PATH = 'videos/main-monitor.mp4'
+
+/**
+ * 视频素材版本号 —— **替换视频文件时必须同步 +1**。
+ *
+ * 视频文件名固定（替换约定不变），而 HTTP 缓存无法感知内容变化：
+ * 若沿用同一个 URL，浏览器会在缓存有效期内继续播放旧文件
+ * （曾因此出现"服务器已是去水印的新视频、页面上仍是带水印旧视频"）。
+ * 把版本号拼进查询串即可让 URL 变化，浏览器必然重新拉取。
+ *
+ * 查询串对 Nginx 静态文件服务无影响（只按路径匹配 $uri）。
+ */
+export const MONITOR_VIDEO_VERSION = 2
+
+/** 实际请求地址：带版本参数，避免浏览器复用旧缓存 */
+export const MONITOR_VIDEO_SRC = `${MONITOR_VIDEO_PATH}?v=${MONITOR_VIDEO_VERSION}`
+
 /** 静态回退画面（由 检测图片.png 生成） */
 export const MONITOR_FALLBACK_SRC = 'images/main-monitor-fallback.png'
 

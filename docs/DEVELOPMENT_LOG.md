@@ -990,4 +990,64 @@ PRIMARY_CAMERA = f"Camera {CAMERA_NUMBER[PRIMARY_POINT]:02d}"   # → "Camera 01
 | 检测框与证据图 | 未受影响，配置与资源均正常 |
 | 已有站点回归 | fitness(80) 200 |
 
+**Commit**：`6d135f88304c83cdf5554a7e8857c490618ce0cb`
+（`fix: label the main monitor feed as Camera 01` → 已推送）
+
+---
+
+## 轮次 17 — 修复监控视频被浏览器长期缓存的问题
+
+**现象**：用户报告在 http://110.42.236.65:18082/ 看到的仍是**修改前**的状态。
+
+**排查**：先排除"文件没换成功"的可能 ——
+
+| 位置 | SHA256 | 大小 |
+|---|---|---|
+| 本地 `Video_repaired.mp4` | `8BDCDE…DA63` | 5,441,230 B |
+| 本地 `frontend/public/videos/main-monitor.mp4` | `8BDCDE…DA63` | 5,441,230 B |
+| 线上 `/var/www/.../videos/main-monitor.mp4` | `8BDCDE…DA63` | 5,441,230 B |
+| **公网下载实际内容** | `8BDCDE…DA63` | 5,441,230 B |
+
+**文件全链路都是修复版**，问题在 HTTP 缓存。响应头：
+
+```
+Cache-Control: max-age=604800     ← 7 天
+Expires: Fri, 25 Sep 2026         ← 一周后
+```
+
+`/videos/` 与 `/images/` 配的是 `expires 7d`。这两类资源在部署时是
+**直接覆盖、文件名不变**，因此浏览器在一周内根本不会回源 ——
+换素材后用户看到的一直是缓存里的旧文件。
+
+**双重修复**（已被缓存的客户端无法靠服务端单方面解决）
+
+1. **URL 版本参数**（对已缓存的浏览器立即生效）
+   `MonitorVideo.tsx` 引入 `MONITOR_VIDEO_VERSION`，请求地址变为
+   `videos/main-monitor.mp4?v=2`。URL 变了，浏览器只能重新拉取。
+   约定：**替换视频文件时同步把该版本号 +1**。
+2. **修正服务端缓存策略**（避免同类问题复发）
+   `expires 7d` → `add_header Cache-Control "public, max-age=300"`，
+   两个入口（18082 与 `/smoking/`）的 `/videos/`、`/images/` 同步修改。
+   5 分钟足够减少重复请求，又保证换素材后无需用户清缓存。
+
+**顺带修正**：显式 `add_header Accept-Ranges bytes` 会产生**重复响应头**
+（nginx 对静态文件默认已下发该头）。已移除显式声明 ——
+Range 请求仍正常（实测 `Range: bytes=0-1023` → **206 Partial Content**）。
+
+**验证**
+
+| 检查项 | 结果 |
+|---|---|
+| 公网 `?v=2` | 200 / `video/mp4` / 5441230 字节 |
+| 缓存头 | `Cache-Control: public, max-age=300`；单一 `Accept-Ranges` |
+| Range 请求 | `bytes=0-1023` → **206 Partial Content**，返回 1024 字节 |
+| 产物视频地址 | `videos/main-monitor.mp4?v=2` |
+| 产物标识 | `Camera 01`×7 |
+| 接口 | `/api/realtime` 等 200；`monitor_point.code = Camera 01` |
+| 双入口 | 主入口与 `/smoking/`（含 `?v=2`）均 200 |
+| 后端 pytest | **220 passed** |
+| 已有站点回归 | fitness(80) 200 |
+
+**新增**：`scripts/fix-nginx-cache.sh`（幂等，自带备份 + `nginx -t` + reload）。
+
 **Commit**：`待填`
