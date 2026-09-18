@@ -762,4 +762,22 @@
 | 循环与越界 | t 越界安全 clamp；循环回 0 框立即消失 |
 | 无新依赖 | 检测模块不引用 torch / ultralytics / cv2 / onnxruntime / numpy / PIL（有测试断言） |
 
-**Commit**：`待填`
+**Commit**：`f9a124471f421155cc32004bfb872635b24bdebf`
+（`feat: add yolo anomaly evidence workflow` → 已推送）
+
+### 轮次 12 部署与公网验证
+
+| 检查项 | 主入口 `:18082` | 备用入口 `/smoking/` |
+|---|---|---|
+| 首页 | 200 | 200 |
+| 监控视频 `main-monitor.mp4` | 200（`video/mp4`，2319296 字节） | — |
+| 证据图（warning / alarm） | 200 / `image/jpeg`（145300 / 146626 字节） | 200 / `image/jpeg` |
+| 检测框接口 | t=0/2/4/5.5 无框；t=6/7/8/8.5 warning；t=9/9.5/10 alarm；t=12 夹到 10；t=-3 无框 | — |
+| 框坐标恒定 | 全部时间点均为 x=0.3359 y=0.2639 w=0.207 h=0.4792 | — |
+| 产物含检测框代码 | `物料堆积`×10、`material_accumulation`×6、证据图路径×1、`detection-overlay`×3 | — |
+| 报警证据图接线 | 3 条物料堆积类报警均带证据图与说明；其余 3 条正确返回无 | — |
+| 已有站点回归 | fitness(80) 200、ccqspace.site(443) 200 | — |
+| **循环不写库** | 连续 5 次采样（跨 4 个循环）报警稳定 **6 条**、知识库 **12 条** | — |
+
+**顺带修正**：`scripts/deploy-yolo-evidence.sh` 中证据图路径的 `cut` 取字段错误
+（路径含斜杠，`-f4` 会截断），已改为直接输出整行。
