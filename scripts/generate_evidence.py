@@ -31,8 +31,29 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 BACKEND_DIR = BASE_DIR / "backend"
-VIDEO_PATH = BASE_DIR / "Video.mp4"
 EVIDENCE_DIR = BASE_DIR / "frontend" / "public" / "images" / "evidence"
+
+#: 视频来源，按优先级取第一个存在的文件。
+#:
+#: **必须优先使用实际接入网页的那份视频**（public/videos/main-monitor.mp4），
+#: 否则证据图会来自另一份素材 —— 例如源片带水印、而网页用的是修好的版本时，
+#: 证据图上就会残留水印，与页面画面对不上。
+VIDEO_CANDIDATES = (
+    BASE_DIR / "frontend" / "public" / "videos" / "main-monitor.mp4",
+    BASE_DIR / "Video_repaired.mp4",
+    BASE_DIR / "Video.mp4",
+)
+
+
+def resolve_video_path() -> Path:
+    """返回实际用于生成证据图的视频路径。"""
+    for candidate in VIDEO_CANDIDATES:
+        if candidate.is_file():
+            return candidate
+    raise SystemExit(
+        "未找到可用的源视频。请确认以下任一文件存在：\n  "
+        + "\n  ".join(str(p) for p in VIDEO_CANDIDATES)
+    )
 
 #: ffmpeg 可执行文件。优先 PATH，其次项目开发机上已验证的固定位置。
 FFMPEG_CANDIDATES = (
@@ -223,11 +244,10 @@ def main() -> int:
                 ok = False
         return 0 if ok else 1
 
-    if not VIDEO_PATH.is_file():
-        raise SystemExit(f"未找到源视频：{VIDEO_PATH}")
-
+    video_path = resolve_video_path()
     ffmpeg = find_ffmpeg()
     font = find_font()
+    print(f"  视频源: {video_path}")
     print(f"  ffmpeg: {ffmpeg}")
     print(f"  字体  : {font or '未找到中文字体，标签将只显示数值'}")
     print()
@@ -238,7 +258,7 @@ def main() -> int:
         generate_one(
             ffmpeg=ffmpeg,
             font=font,
-            video=VIDEO_PATH,
+            video=video_path,
             out_path=EVIDENCE_DIR / target["name"],
             time_s=target["time"],
             x=x, y=y, w=w, h=h,
