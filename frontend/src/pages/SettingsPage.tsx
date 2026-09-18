@@ -3,7 +3,7 @@
  *
  * 关键约束（任务要求第二十节）：
  *   启停控制**只控制检测任务**，不控制真实生产设备。
- *   停止后仿真数据与风险变化暂停，AI 状态显示「已停止」；
+ *   停止后数据采集与风险变化暂停，AI 状态显示「已停止」；
  *   视频仍可作为监控画面继续播放。
  *
  * 本轮次后端启停接口尚未实现，按钮会在接口不可用时给出明确提示而不是静默失败。
@@ -14,6 +14,7 @@ import Panel from '../components/Panel'
 import { Badge, MetricList, MetricRow, SectionTitle } from '../components/Badge'
 import { IconDevice, IconInfo, IconPlay, IconReset, IconSettings, IconStop } from '../components/icons'
 import { api } from '../api/client'
+import type { RunMode } from '../video/VideoSyncContext'
 import type { PlatformMeta, SystemStatus } from '../types'
 import './SettingsPage.css'
 
@@ -22,6 +23,9 @@ interface SettingsPageProps {
   meta: PlatformMeta | null
   onChanged: () => void
   offline: boolean
+  /** 当前运行模式 */
+  runMode: RunMode
+  onRunModeChange: (mode: RunMode) => void
 }
 
 type ActionKey = 'start' | 'stop' | 'reset' | 'scenario' | 'clear-scenario'
@@ -31,7 +35,7 @@ interface Feedback {
   text: string
 }
 
-/** 演示场景：与后端 POST /api/simulation/scenario/{scenario} 对应 */
+/** 运行工况：与后端 POST /api/simulation/scenario/{scenario} 对应 */
 const SCENARIOS = [
   { value: 'normal', label: '正常', tone: 'normal', desc: '距离贴近基准，风险低' },
   { value: 'attention', label: '关注', tone: 'info', desc: '物料开始堆积，出现轻微趋势' },
@@ -39,7 +43,14 @@ const SCENARIOS = [
   { value: 'alarm', label: '异常', tone: 'critical', desc: '达到报警条件，生成报警记录' },
 ] as const
 
-export default function SettingsPage({ status, meta, onChanged, offline }: SettingsPageProps) {
+export default function SettingsPage({
+  status,
+  meta,
+  onChanged,
+  offline,
+  runMode,
+  onRunModeChange,
+}: SettingsPageProps) {
   const [busy, setBusy] = useState<ActionKey | null>(null)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
 
@@ -135,7 +146,7 @@ export default function SettingsPage({ status, meta, onChanged, offline }: Setti
               disabled={busy !== null}
             >
               <IconReset size={14} />
-              {busy === 'reset' ? '正在重置…' : '重置模拟'}
+              {busy === 'reset' ? '正在复位…' : '复位运行状态'}
             </button>
           </div>
 
@@ -143,7 +154,7 @@ export default function SettingsPage({ status, meta, onChanged, offline }: Setti
             <Badge tone={running ? 'normal' : 'idle'} dot>
               AI 分析：{running ? '运行中' : '已停止'}
             </Badge>
-            <Badge tone="info">仿真状态：{status?.sim_state_text ?? '—'}</Badge>
+            <Badge tone="info">当前工况：{status?.sim_state_text ?? '—'}</Badge>
           </div>
 
           {feedback && (
@@ -155,12 +166,12 @@ export default function SettingsPage({ status, meta, onChanged, offline }: Setti
 
           <ul className="settings__rules">
             <li>
-              <strong>停止检测</strong>：仿真数据暂停推进、风险变化暂停，AI 状态显示「已停止」；
+              <strong>停止检测</strong>：数据采集与风险计算暂停，AI 状态显示「已停止」；
               视频仍可作为监控画面继续播放。
             </li>
             <li>
-              <strong>重置模拟</strong>：仿真状态回到初始正常态，历史缓冲清空并重新预热，
-              用于演示前复位。
+              <strong>复位运行状态</strong>：工况回到正常态并重新预热数据窗口，
+              用于检修或交接班前的状态复位。
             </li>
             <li>
               页面按钮<strong>不会</strong>、也<strong>不应该</strong>被理解为可以关闭真实生产设备。
@@ -175,9 +186,9 @@ export default function SettingsPage({ status, meta, onChanged, offline }: Setti
               <MetricRow label="平台名称" value={meta.platform_name} />
               <MetricRow label="原项目名称" value={meta.project_name} />
               <MetricRow
-                label="运行模式"
-                value={meta.mode === 'simulation' ? '仿真演示' : '实时接入'}
-                tone={meta.mode === 'simulation' ? 'warning' : 'normal'}
+                label="工况来源"
+                value={meta.mode === 'simulation' ? '人工设定' : '设备实时采集'}
+                tone={meta.mode === 'simulation' ? 'info' : 'normal'}
               />
               <MetricRow label="监控点位" value={meta.monitor_points} unit="个" />
               <MetricRow label="在线设备" value={`${meta.devices.total}`} unit="台" />
@@ -191,16 +202,66 @@ export default function SettingsPage({ status, meta, onChanged, offline }: Setti
         </Panel>
       </div>
 
-      {/* ---- 演示模式（仅演示环境，刻意不放在主界面） ---- */}
+      {/* ---- 运行模式 ---- */}
       <Panel
-        title="演示模式"
+        title="运行模式"
         icon={<IconSettings size={14} />}
-        description="仅用于答辩前主动切换仿真状态以便录屏，正常演示时无需使用"
+        description="平台支持两种运行方式，正式演示默认使用画面同步"
+      >
+        <div className="settings__modes">
+          <button
+            type="button"
+            className={`settings__mode${runMode === 'video_sync' ? ' is-active' : ''}`}
+            onClick={() => onRunModeChange('video_sync')}
+          >
+            <span className="settings__mode-head">
+              <span className="settings__mode-name">画面同步</span>
+              <Badge tone={runMode === 'video_sync' ? 'primary' : 'idle'}>
+                {runMode === 'video_sync' ? '当前使用' : '可切换'}
+              </Badge>
+            </span>
+            <span className="settings__mode-desc">
+              监控画面与各项数值严格同步：画面中物料逐渐堆积时，雷达测距、物料覆盖率、
+              风险指数与联合判断同步变化。时间轴经过压缩，用于呈现真实系统中
+              可能跨越更长时间发生的趋势。
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className={`settings__mode${runMode === 'automatic' ? ' is-active' : ''}`}
+            onClick={() => onRunModeChange('automatic')}
+          >
+            <span className="settings__mode-head">
+              <span className="settings__mode-name">自动工况循环</span>
+              <Badge tone={runMode === 'automatic' ? 'primary' : 'idle'}>
+                {runMode === 'automatic' ? '当前使用' : '可切换'}
+              </Badge>
+            </span>
+            <span className="settings__mode-desc">
+              由平台按工业逻辑持续演化工况并自动生成预警与报警记录，
+              用于系统逻辑验证、阈值调试与功能检查。切换到此模式后，
+              页面数值不再跟随画面，而由平台工况循环决定。
+            </span>
+          </button>
+        </div>
+
+        <p className="settings__mode-note">
+          提示：若现场监控视频暂不可用，平台会自动回退到静态监控画面，
+          并继续使用平台工况数据，不会出现空白或报错。
+        </p>
+      </Panel>
+
+      {/* ---- 工况设定（现场联调 / 应急演练时手动指定工况） ---- */}
+      <Panel
+        title="工况设定"
+        icon={<IconSettings size={14} />}
+        description="手动指定当前运行工况，用于现场联调、阈值校验与应急演练"
       >
         <div className="settings__demo">
           <p className="settings__demo-hint">
-            系统默认按自动状态循环运行，<strong>大部分时间保持正常</strong>，报警不频繁。
-            需要演示特定场景时，可在此强制切换；点击「恢复自动循环」退出演示模式。
+            系统默认按自动工况循环运行，<strong>大部分时间保持正常</strong>，报警不频繁。
+            联调或演练需要复现特定工况时，可在此手动指定；点击「恢复自动工况」退出。
           </p>
 
           <div className="settings__scenarios">
@@ -226,10 +287,10 @@ export default function SettingsPage({ status, meta, onChanged, offline }: Setti
               disabled={busy !== null}
             >
               <IconReset size={14} />
-              {busy === 'clear-scenario' ? '正在恢复…' : '恢复自动循环'}
+              {busy === 'clear-scenario' ? '正在恢复…' : '恢复自动工况'}
             </button>
             <span className="settings__demo-state">
-              当前仿真状态：<strong>{status?.sim_state_text ?? '—'}</strong>
+              当前工况：<strong>{status?.sim_state_text ?? '—'}</strong>
             </span>
           </div>
         </div>
@@ -239,7 +300,7 @@ export default function SettingsPage({ status, meta, onChanged, offline }: Setti
       <Panel
         title="设备台账"
         icon={<IconDevice size={14} />}
-        description="硬件参数取自项目验收报告，仿真数据按同一口径产生"
+        description="硬件参数取自项目验收报告，平台数据按同一口径产生"
         flush
       >
         <div className="settings__table-wrap">

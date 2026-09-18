@@ -1,8 +1,8 @@
-"""统一仿真数据引擎。
+"""统一监控数据引擎。
 
 设计原则（对应任务要求 A1~A16）
 -------------------------------
-1. **唯一数据源**：整个系统只有这一个持续存在的仿真状态。所有 API（realtime /
+1. **唯一数据源**：整个系统只有这一个持续存在的运行状态。所有 API（realtime /
    history / system status / prediction / alarms）都从同一个引擎读取，
    因此首页、雷视联动、趋势图、报警在任何时刻都互相自洽。
 2. **状态机驱动**：severity（堵料严重度 0~1）由状态机推进；
@@ -152,7 +152,7 @@ def coverage_for_severity(severity: float) -> float:
 
 
 class SimulationEngine:
-    """制丝线物流监控的统一仿真引擎。"""
+    """制丝线物流监控的统一数据引擎。"""
 
     def __init__(
         self,
@@ -169,11 +169,11 @@ class SimulationEngine:
 
         # 检测任务是否运行（对应启停控制；只控制检测任务，不控制真实设备）
         self._running = True
-        # 仿真状态机当前阶段
+        # 运行工况状态机当前阶段
         self._stage: ScenarioName = "normal"
-        # 是否处于"演示场景强制"状态（此时暂停自动循环）
+        # 是否处于"工况手动设定"状态（此时暂停自动循环）
         self._scenario_forced = False
-        # 当前阶段已经驻留的仿真秒数
+        # 当前阶段已经驻留的运行秒数
         self._stage_elapsed = 0.0
         # 上一阶段（用于恢复路径判定）
         self._previous_stage: ScenarioName = "normal"
@@ -190,6 +190,9 @@ class SimulationEngine:
         # 预警/报警记录
         self._alarms: deque[AlarmRecordData] = deque(maxlen=300)
         self._alarm_seq = 0
+        #: 是否登记预警/报警事件。视频同步模式下由应用启动时关闭，
+        #: 避免演示视频循环回放不断写入永久报警记录。
+        self._event_recording = True
 
         # 当前堵料严重度（0~1）。None 表示尚未初始化，首个 tick 直接落到目标值。
         self._severity: float | None = None
@@ -204,7 +207,7 @@ class SimulationEngine:
         # 上一阶段的联合判断结果，用于边沿检测（生成报警 / 计数预警）
         self._last_verdict: FusionVerdict = "normal"
 
-        # 仿真时钟（单调递增，与真实时间同速）
+        # 运行时钟（单调递增，与真实时间同速）
         self._sim_start = time.time()
         self._sim_time = 0.0
 
@@ -334,7 +337,7 @@ class SimulationEngine:
         """推进一个采样周期（100 ms）。由后台线程按 10 Hz 调用。"""
         with self._lock:
             if not self._running:
-                # 停止检测后仿真不再推进，但状态与历史保持可查询
+                # 停止检测后数据不再推进，但状态与历史保持可查询
                 return
             self._advance(record_events=True)
 
@@ -365,7 +368,7 @@ class SimulationEngine:
                 self._enter_stage("normal")
             return
 
-        # 演示场景强制期间不自动迁移
+        # 工况手动设定期间不自动迁移
         if self._scenario_forced:
             return
 
@@ -658,6 +661,17 @@ class SimulationEngine:
         return "material_flow_fluctuation"
 
     def _evaluate_events(self, sample: SimSample) -> None:
+        """升级到 warning / alarm 时登记事件。
+
+        ``event_recording`` 为 False 时直接返回。视频同步模式下由应用启动时
+        关闭该开关：该模式的遥测完全由视频时间轴解算
+        （见 :mod:`app.services.video_sync`），引擎的自动演化结果不参与展示，
+        若仍在此写库，视频每约 20 秒循环一次就会不断新增报警记录，
+        几分钟后报警列表将完全失去可信度。
+        """
+        if not self._event_recording:
+            return
+
         distance = sample.radar_filtered
         fusion, _ = self._fuse(distance, sample.severity, sample.vision_confidence)
         previous = self._last_verdict
@@ -790,7 +804,7 @@ class SimulationEngine:
     # ---- 时间标签 -----------------------------------------------------------
 
     def _label_at(self, sim_time: float) -> str:
-        """仿真时间 → 时钟标签，基于真实启动时刻，保证与页面时间一致。"""
+        """运行时间 → 时钟标签，基于真实启动时刻，保证与页面时间一致。"""
         moment = datetime.fromtimestamp(self._sim_start + sim_time)
         return moment.strftime("%H:%M:%S")
 
@@ -805,6 +819,17 @@ class SimulationEngine:
     def running(self) -> bool:
         with self._lock:
             return self._running
+
+    @property
+    def event_recording(self) -> bool:
+        """是否登记新的预警/报警事件。"""
+        with self._lock:
+            return self._event_recording
+
+    @event_recording.setter
+    def event_recording(self, enabled: bool) -> None:
+        with self._lock:
+            self._event_recording = bool(enabled)
 
     @property
     def seed(self) -> int:
@@ -961,7 +986,7 @@ class SimulationEngine:
             return None
 
     # =========================================================================
-    # 控制接口（启停 / 重置 / 演示场景）
+    # 控制接口（启停 / 复位 / 工况设定）
     # =========================================================================
 
     def start_detection(self) -> str:
@@ -971,19 +996,19 @@ class SimulationEngine:
                 return "检测任务已在运行中"
             self._running = True
             return "检测任务已启动"
-
+        
     def stop_detection(self) -> str:
-        """停止检测任务。仿真数据与风险变化随之暂停，历史仍可查询。"""
+        """停止检测任务。数据采集与风险计算随之暂停，历史仍可查询。"""
         with self._lock:
             if not self._running:
                 return "检测任务已处于停止状态"
             self._running = False
-            return "检测任务已停止，仿真数据暂停推进"
+            return "检测任务已停止，数据采集暂停"
 
     def reset(self) -> str:
-        """重置模拟：回到 normal 并清理当前异常状态。
+        """复位运行状态：回到 normal 并清理当前异常状态。
 
-        同时清空实时历史缓冲并重新预热，保证演示前复位到干净的初始状态。
+        同时清空实时历史缓冲并重新预热，使状态回到干净的初始值。
         历史报警记录保留（它们属于"已发生的事实"）。
         """
         with self._lock:
@@ -1008,27 +1033,31 @@ class SimulationEngine:
             self._running = True
 
             self._warmup(WARMUP_SAMPLES)
-            return "模拟已重置，状态恢复为正常"
+            return "运行状态已复位，当前工况为正常"
 
     def set_scenario(self, scenario: ScenarioName) -> str:
-        """演示场景：强制进入指定状态（仅演示环境使用）。"""
+        """工况设定：手动指定当前运行工况。
+
+        用于现场联调、阈值校验与应急演练时复现特定工况；
+        不指定时引擎按自动工况循环运行。
+        """
         with self._lock:
             if scenario not in MONITOR_STATES:
-                raise ValueError(f"不支持的演示场景：{scenario}")
+                raise ValueError(f"不支持的运行工况：{scenario}")
             self._stage = scenario
             self._stage_elapsed = 0.0
             self._recover_remaining = 0.0
             self._scenario_forced = True
             self._alarm_this_cycle = scenario == "alarm"
             self._running = True
-            return f"已切换演示场景：{STATE_TEXT[scenario]}"
+            return f"运行工况已设定为：{STATE_TEXT[scenario]}"
 
     def clear_scenario(self) -> str:
-        """退出演示场景，恢复自动循环。"""
+        """恢复自动工况循环。"""
         with self._lock:
             self._scenario_forced = False
             self._stage_elapsed = 0.0
-            return "已退出演示场景，恢复自动状态循环"
+            return "已恢复自动工况循环"
 
     # =========================================================================
     # 智能预警
@@ -1389,7 +1418,7 @@ _engine_lock = threading.Lock()
 
 
 def get_engine() -> SimulationEngine:
-    """获取进程内唯一的仿真引擎实例。"""
+    """获取进程内唯一的监控数据引擎实例。"""
     global _engine
     if _engine is None:
         with _engine_lock:

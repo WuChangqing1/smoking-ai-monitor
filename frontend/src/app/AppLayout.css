@@ -98,12 +98,23 @@
   font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
-.page__mode--sim {
-  border-color: #ecc9a0;
-  background: var(--c-warning-bg);
-  color: #a35c05;
+/* 检测任务已停止：转为中性灰，避免被误读为故障 */
+.page__mode--idle {
+  border-color: var(--c-border);
+  background: #f1f3f5;
+  color: var(--c-text-muted);
+}
+
+/* 画面同步指示：蓝灰，说明当前数值随监控画面时间轴同步 */
+.page__mode--sync {
+  border-color: #cfdae4;
+  background: var(--c-info-bg);
+  color: var(--c-info);
+  font-family: var(--font-mono);
+  font-weight: 500;
 }
 
 .page__ts {

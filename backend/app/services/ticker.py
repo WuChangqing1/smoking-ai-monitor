@@ -1,6 +1,6 @@
 """后台 tick 线程。
 
-按资料口径以 10 Hz 推进仿真引擎。使用独立的守护线程而不是 asyncio 任务，
+按资料口径以 10 Hz 推进数据引擎。使用独立的守护线程而不是 asyncio 任务，
 原因是引擎本身是纯同步实现（并配 threading.Lock 保证并发安全），
 用线程驱动最简单、也最容易在测试中单独调用 ``engine.tick()``。
 """
@@ -35,7 +35,7 @@ class SimulationTicker:
             target=self._run, name="simulation-ticker", daemon=True
         )
         self._thread.start()
-        logger.info("仿真 tick 线程已启动（间隔 %.3f s）", self._interval)
+        logger.info("采集 tick 线程已启动（间隔 %.3f s）", self._interval)
 
     def stop(self, timeout: float = 2.0) -> None:
         self._stop.set()
@@ -43,7 +43,7 @@ class SimulationTicker:
         if thread is not None and thread.is_alive():
             thread.join(timeout=timeout)
         self._thread = None
-        logger.info("仿真 tick 线程已停止")
+        logger.info("采集 tick 线程已停止")
 
     @property
     def alive(self) -> bool:
@@ -57,7 +57,7 @@ class SimulationTicker:
             try:
                 engine.tick()
             except Exception:  # pragma: no cover - 守护线程不能因异常退出
-                logger.exception("仿真 tick 执行异常，已跳过本次")
+                logger.exception("采集 tick 执行异常，已跳过本次")
 
             next_at += self._interval
             sleep_for = next_at - time.perf_counter()

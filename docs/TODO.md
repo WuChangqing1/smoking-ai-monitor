@@ -140,12 +140,26 @@
 - [x] 修正 `monitor_point.stream` 绝对路径 → 相对路径
 - [x] 新增 `scripts/verify-deployment.sh` 一键复验
 
+## 轮次 9：最终视频接入与画面同步遥测（Commit 15）
+
+- [x] 视频参数实测（1280×720 / H.264 / 24fps / 10.00s / 2.21MB，无需转码）
+- [x] 视频接入 `frontend/public/videos/main-monitor.mp4`（源文件保留，哈希一致）
+- [x] `playbackRate = 0.5` 浏览器侧调速（6 个时机重复应用，防止被浏览器重置）
+- [x] 后端 `video_sync` 遥测引擎（关键帧 + 线性插值 + 确定性微扰）
+- [x] `/api/video-sync/info`（关键帧轨迹）与 `/api/video-sync/telemetry`（按 t 解算）
+- [x] `/api/meta` 暴露 `run_mode` 与视频参数
+- [x] 前端 `VideoSyncProvider`：全站唯一时间源（rAF 采样 `video.currentTime`）
+- [x] 首页 / 雷视联动 / 智能预警 / 当前报警 统一消费同一份遥测
+- [x] 趋势图只展示当前这一轮，循环后自然重置（无无限锯齿）
+- [x] 循环不写库：引擎 `event_recording` 显式开关
+- [x] 保留 SimulationEngine 与 automatic 模式
+- [x] 系统设置新增「运行模式」切换
+- [x] 后端 36 项新测试 + 前后端遥测对等校验脚本
+- [x] 视频 fallback 保留（HEAD 探测 + onError + 静态图）
+
 ## 待办（后续可选）
 
-- [ ] **最终监控视频**：到位后重命名为 `main-monitor.mp4`，
-      本地 `npm run build` 后上传 `dist/videos/main-monitor.mp4` 即可自动生效
-      （前端已用 HEAD 探测 + onError 双层回退，当前实测正确回退到静态监控图）
-- [ ] 可选：把真实数据源接入（`SMOKING_SIMULATION=0` + 实现数据源适配器，见 README 第 11 节）
+- [ ] 可选：接入现场设备直采（`SMOKING_SIMULATION=0` + 数据源适配器，见 README 第 11 节）
 - [ ] 可选：如需域名访问，添加 DNS A 记录（大陆服务器 80/443 需域名已备案）
 - [ ] 可选：下线备用入口 `bash scripts/remote-ops.sh rollback`（主入口不受影响）
 

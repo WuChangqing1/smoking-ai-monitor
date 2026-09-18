@@ -2,12 +2,12 @@
  * 与后端接口对齐的类型定义。
  *
  * 命名口径来自 docs/PROJECT_CONTEXT.md：
- *  - 仿真状态 sim_state: normal / attention / warning / alarm / stopped
+ *  - 运行工况 sim_state: normal / attention / warning / alarm / stopped
  *  - 风险等级 risk.level: low / medium / high / critical
  *  - 报警等级 level: info(提示) / warning(预警) / critical(严重)
  */
 
-/** 仿真状态机状态 */
+/** 运行工况状态机状态 */
 export type SimState = 'normal' | 'attention' | 'warning' | 'alarm' | 'stopped'
 
 /** 风险等级 */
@@ -41,6 +41,59 @@ export interface PlatformMeta {
   monitor_points: number
   devices: { radar: number; camera: number; total: number }
   data_rate_hz: number
+  /** 运行模式：video_sync（视频同步，默认） / automatic（自动工况循环） */
+  run_mode: 'automatic' | 'video_sync'
+  /** 视频同步模式下主监控视频的源时长（秒） */
+  video_duration_seconds: number
+  /** 主监控视频的默认播放速率 */
+  video_playback_rate: number
+}
+
+/** 视频同步关键帧 GET /api/video-sync/info */
+export interface VideoKeyframe {
+  t: number
+  distance: number
+  risk: number
+  coverage: number
+  speed_ratio: number
+}
+
+/** 视频同步模式信息 */
+export interface VideoSyncInfo {
+  run_mode: 'automatic' | 'video_sync'
+  duration_seconds: number
+  playback_rate: number
+  sample_rate_hz: number
+  baseline_distance: number
+  alarm_threshold: number
+  keyframes: VideoKeyframe[]
+}
+
+/** 按 video.currentTime 解算的一帧遥测 */
+export interface VideoTelemetryPayload {
+  t: number
+  sim_state: SimState
+  sim_state_text: string
+  risk_index: number
+  risk_level: RiskLevel
+  risk_level_text: string
+  risk_trend: 'stable' | 'rising' | 'rising_fast' | 'falling'
+  risk_trend_text: string
+  distance: number
+  baseline_distance: number
+  delta: number
+  coverage: number
+  vision_label: string
+  vision_label_text: string
+  vision_confidence: number
+  conveyor_speed: number
+  conveyor_speed_baseline: number
+  equipment_load: number
+  temperature: number
+  humidity: number
+  fusion_verdict: FusionVerdict
+  fusion_verdict_text: string
+  fusion_reason: string
 }
 
 /** 运行状态项 GET /api/system/status */

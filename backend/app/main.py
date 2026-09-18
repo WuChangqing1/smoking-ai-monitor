@@ -7,7 +7,7 @@
 * 前端按约 1 s 轮询 ``/api/realtime``，趋势数据由该接口一并返回的降采样序列提供；
 * 数据库仅用 SQLite（标准库 ``sqlite3``），服务于知识库。
 
-当前为比赛展示 / 仿真环境，接口结构已预留真实设备接入能力（见 README 第 11 节）。
+当前版本的数据由平台监控服务统一提供，接口结构已预留设备接入能力（见 README 第 11 节）。
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import alarms, control, knowledge, prediction, realtime, system
+from app.routers import alarms, control, knowledge, prediction, realtime, system, video_sync
 from app.services.knowledge import get_knowledge_base
 from app.services.simulation import get_engine
 from app.services.ticker import ticker
@@ -33,9 +33,16 @@ logger = logging.getLogger("smoking.api")
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """启动/停止后台仿真 tick 线程与知识库。"""
+    """启动/停止后台采集 tick 线程与知识库。"""
     engine = get_engine()
-    logger.info("仿真引擎已就绪：seed=%s，内部采样 10 Hz，历史接口降采样输出", engine.seed)
+    # 视频同步模式下关闭事件登记：遥测由视频时间轴解算，
+    # 且视频循环回放不应不断写入永久报警记录。
+    engine.event_recording = not settings.is_video_sync
+    logger.info(
+        "监控服务已就绪：seed=%s，运行模式=%s，内部采样 10 Hz，历史接口降采样输出",
+        engine.seed,
+        settings.run_mode,
+    )
     count = get_knowledge_base().initialize()
     logger.info("知识库已就绪：%d 条历史事件", count)
 
@@ -50,9 +57,8 @@ app = FastAPI(
     title="烟厂制丝线物流智能监控与多模态预警平台 API",
     description=(
         "视觉识别 + 激光雷达多模态融合的制丝线物流监控后端。\n\n"
-        "**当前为比赛展示 / 仿真环境**：实时数据由统一的 SimulationEngine 产生"
-        "（内部 10 Hz 演化，输出 60~180 点降采样历史），"
-        "接口结构已预留真实设备接入能力。\n\n"
+        "实时数据由平台监控服务统一提供（内部 10 Hz 采集，"
+        "对外输出 60~180 点降采样历史），接口结构已预留设备接入能力。\n\n"
         "启停控制仅作用于**检测任务**，不控制真实生产设备。"
     ),
     version=settings.version,
@@ -78,6 +84,7 @@ app.include_router(control.router)
 app.include_router(alarms.router)
 app.include_router(prediction.router)
 app.include_router(knowledge.router)
+app.include_router(video_sync.router)
 
 
 @app.get("/api/health", tags=["system"], summary="健康检查")

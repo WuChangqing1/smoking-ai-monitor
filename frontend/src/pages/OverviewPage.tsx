@@ -28,6 +28,7 @@ import {
   IconVideo,
 } from '../components/icons'
 import type { PageId } from '../app/navigation'
+import { useVideoSync } from '../video/VideoSyncContext'
 import type { Device, RealtimeSnapshot, RiskLevel, SimState, SystemStatus } from '../types'
 import './OverviewPage.css'
 
@@ -38,9 +39,11 @@ interface OverviewPageProps {
   realtimeError: string | null
   devices: Device[]
   onNavigate: (id: PageId) => void
+  /** 是否处于视频同步模式（数值随主监控画面时间轴变化） */
+  syncActive?: boolean
 }
 
-/** 仿真状态 → 状态卡色调与中文标签 */
+/** 运行工况 → 状态卡色调与中文标签 */
 const STATE_TONE: Record<SimState, 'normal' | 'warning' | 'critical' | 'idle'> = {
   normal: 'normal',
   attention: 'warning',
@@ -84,7 +87,9 @@ export default function OverviewPage({
   realtimeError,
   devices,
   onNavigate,
+  syncActive = false,
 }: OverviewPageProps) {
+  const sync = useVideoSync()
   // 每秒走动的时钟，仅用于画面时间戳
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -122,7 +127,7 @@ export default function OverviewPage({
   return (
     <div className="overview">
       {/* 数据更新中断时的轻提示，不阻塞页面 */}
-      {stale && (
+      {stale && !syncActive && (
         <div className="overview__stale">
           <IconInfo size={13} />
           数据更新暂时中断，当前展示为最后一次成功获取的数据。
@@ -206,8 +211,29 @@ export default function OverviewPage({
               cameraLabel={point?.code ?? 'Camera 01'}
               timestamp={now.toLocaleString('zh-CN', { hour12: false })}
               hasStream={Boolean(point?.stream) || point === undefined}
+              /* 主监控画面作为全站同步时间源：页面数值随它的 currentTime 变化 */
+              asTimeSource
             />
           </div>
+
+          {/* 画面进度：让"数值随画面同步"这件事可见（非播放器控件） */}
+          {syncActive && sync && (
+            <div className="overview__progress">
+              <span className="overview__progress-label">
+                画面同步 {sync.currentTime.toFixed(1)}s / {sync.duration.toFixed(0)}s
+                {!sync.playing && sync.ready && ' · 已暂停'}
+                {sync.loopCount > 0 && ` · 第 ${sync.loopCount + 1} 轮`}
+              </span>
+              <span className="overview__progress-track">
+                <span
+                  className="overview__progress-fill"
+                  style={{
+                    width: `${Math.min(100, (sync.currentTime / Math.max(0.1, sync.duration)) * 100)}%`,
+                  }}
+                />
+              </span>
+            </div>
+          )}
 
           {/* 画面下方信息条：只放关键字段 */}
           <div className="overview__video-meta">
@@ -328,7 +354,7 @@ export default function OverviewPage({
               <EmptyState
                 tone={realtimeError ? 'critical' : 'idle'}
                 title={realtimeError ? '实时数据不可用' : '正在获取实时数据'}
-                description={realtimeError ?? '数据由后端统一仿真引擎产生。'}
+                description={realtimeError ?? '数据由后端监控服务统一提供。'}
               />
             )}
           </Panel>

@@ -120,6 +120,27 @@
 - 数据库：SQLite（stdlib `sqlite3`）
 - 部署：Nginx 静态 + `/api/` 反代 Uvicorn（systemd 或 user systemd / tmux）
 
+## 10.1 运行模式（两种，由 `SMOKING_RUN_MODE` 选择）
+
+| 模式 | 用途 | 数据来源 |
+|---|---|---|
+| **`video_sync`（默认）** | 正式演示 | 页面数值随主监控视频 `currentTime` 同步解算 |
+| `automatic` | 开发 / 测试 / 逻辑验证 | 后端 `SimulationEngine` 自动工况循环 |
+
+`video_sync` 要点（详见 `docs/DEVELOPMENT_LOG.md` 轮次 9）：
+
+- 唯一时间源是 `video.currentTime`（源视频 0~10 s），**不使用 `Date.now()`**
+- 最终视频：`frontend/public/videos/main-monitor.mp4`
+  1280×720 / H.264 / 24 fps / 10.00 s / 2.21 MB
+- 播放速率 **0.5×**（浏览器侧调速，不重新编码）→ 演示周期约 20 s
+- 关键帧 + 线性插值，确定性 sin 微扰（±1~3 mm），同一 t 结果可复现
+- 后端权威定义：`app/services/video_sync.py`
+  前端等价实现：`src/video/videoTelemetry.ts`（用 `check-telemetry-parity.mjs` 校验一致）
+- **循环不写库**：引擎 `event_recording=False`，历史报警保持 6 条样例
+
+**Commit**：`5a146982f9bfd435f22093414860ceb632a97cd4`
+（`feat: enable dedicated port entry for the platform` → 已推送）
+
 ## 11. 设备与点位规划（仿真口径，与硬件数量一致）
 
 - 设备总数 **18** = 雷达 3 + 摄像头 15；监控点位 **7**（点位1..点位7）。

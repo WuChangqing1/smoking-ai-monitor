@@ -517,6 +517,92 @@
 
 ---
 
+## 轮次 9 — 最终视频接入与画面同步遥测（video_sync）
+
+**目标**：把最终监控视频正式接入平台，并让页面数值与视频画面严格同步。
+
+**视频参数（实测 ffprobe）**
+
+| 项 | 值 |
+|---|---|
+| 容器 / 编码 | MP4 / H.264（avc1）+ yuv420p，浏览器兼容性最佳，**无需转码** |
+| 分辨率 | 1280×720（16:9） |
+| 帧率 | 24 fps（240 帧） |
+| 时长 | 10.00 s |
+| 大小 | 2.21 MB（1.85 Mbps） |
+| 音轨 | AAC 48 kHz 立体声（页面 muted 播放） |
+| 接入路径 | `frontend/public/videos/main-monitor.mp4`（源文件 `Video.mp4` 保留在根目录，哈希一致） |
+
+**完成内容**
+
+- 后端 `app/services/video_sync.py`：关键帧轨迹 + 线性插值 + 确定性微扰
+- 后端 `app/routers/video_sync.py`：`/api/video-sync/info`、`/api/video-sync/telemetry`
+- 后端 `settings.run_mode`：`video_sync`（默认）/ `automatic`；`/api/meta` 暴露运行模式与视频参数
+- 前端 `src/video/videoTelemetry.ts`：与后端**逐行等价**的解析实现
+- 前端 `src/video/VideoSyncContext.tsx`：全站唯一时间源 + 唯一遥测解算
+- 前端 `src/video/syncedTelemetry.ts`：适配层（遥测 → 页面已有快照结构）+ 预测派生
+- `MonitorVideo`：接入 `playbackRate = 0.5`、注册为全站时间源、不显示播放器控件
+- 系统设置新增「运行模式」区（画面同步 / 自动工况循环）
+- `frontend/src/video/videoTelemetry.selftest.ts` + `frontend/scripts/check-telemetry-parity.mjs`
+- 后端 `tests/test_video_sync.py`：36 项新测试
+
+**关键决策**
+
+1. **唯一时间源是 `video.currentTime`**，不用 `Date.now()`、不用"网页运行了多少秒"。
+   采样用 `requestAnimationFrame` 读取，因此：
+   * 视频暂停 → currentTime 不变 → 数据自动冻结（无需额外判断）；
+   * 拖动进度 → 下一帧立即同步，不会从旧状态慢慢增长；
+   * 切后台 → rAF 暂停，恢复后重新读真实值，不会因计时器累计而跑偏；
+   * 循环回绕 → currentTime 变小 → 自动复位并开启新一轮趋势。
+2. **0.5× 用浏览器调速，不重新编码**：源视频 10 s，演示周期约 20 s，
+   文件大小与原视频不变。`playbackRate` 在 `loadedmetadata / loadeddata /
+   canplay / play / playing / seeked` 六个时机重复应用 ——
+   部分浏览器会在这些时点把它重置回 1.0。
+3. **前后端同一套轨迹，两份实现 + 对等校验**：
+   后端是权威定义，前端做本地插值以避免高频 HTTP 请求
+   （UI 随 rAF 刷新，不需要 250 ms 一次请求）。
+   用 `check-telemetry-parity.mjs` 做逐点比对，确保两边不会悄悄漂移。
+4. **趋势图只展示当前这一轮**：`samplesUpTo(currentTime)`，
+   循环后自然从 0 重新开始，不形成 `0.72→0.58→0.72` 的无限锯齿累积。
+5. **报警不落库**：视频每约 20 秒循环一次，若每轮写库一分钟就有 3 条报警。
+   给引擎加显式开关 `event_recording`，应用启动时在 video_sync 模式下关闭它。
+   历史报警继续使用原有 6 条真实风格样例。
+   （初版实现是运行时读配置，会让引擎行为隐式依赖环境变量，已改为显式开关。）
+6. **保留全部既有能力**：`SimulationEngine` 与 automatic 模式完整保留，
+   两种模式由 `run_mode` 选择；原 121 项测试全部继续通过。
+
+**关键帧（实际采用，与任务规格一致）**
+
+| t (s) | distance | risk | coverage | speed | state |
+|---|---|---|---|---|---|
+| 0 | 0.721 | 18 | 0.30 | 1.00 | normal |
+| 2 | 0.706 | 27 | 0.37 | 0.98 | normal |
+| 4 | 0.681 | 43 | 0.49 | 0.95 | attention |
+| 6 | 0.651 | 59 | 0.61 | 0.91 | warning |
+| 8 | 0.612 | 76 | 0.74 | 0.86 | warning |
+| 10 | 0.582 | 89 | 0.83 | 0.80 | alarm |
+
+> 未调整规格给定的数值：抽帧核对（t=0/2/4/6/7/9）确认视频中物料带
+> 逐渐变宽变厚，与规格描述的堆积过程一致，因此沿用原切分点。
+> 终点 0.582 m 对应资料中的真实报警测量值 0.58 m，且每个采样点存在
+> ±1~3 mm 确定性微扰，不会每点都等于 0.580。
+
+**验证**
+
+| 检查项 | 结果 |
+|---|---|
+| 后端 pytest | **157 passed**（原 121 + 视频同步 36） |
+| 前后端遥测对等 | **101 个时间点 × 6 个字段完全一致** |
+| 前端 tsc + vite build | 通过（629 模块，无警告） |
+| 视频可访问性 | `HEAD /videos/main-monitor.mp4` → 200，`content-type: video/mp4` |
+| 越界安全 | t=12 → 夹到 10.0（alarm）；t=-3 → 夹到 0（normal） |
+| 循环复位 | t=10 alarm → t=0 normal，同 t 数据可复现 |
+| 原能力回归 | automatic 模式、启停控制、报警生成测试全部继续通过 |
+
+**Commit**：`待填`
+
+---
+
 ## 轮次 9 — 本地开发环境可用性修复
 
 **问题**：用户反馈页面显示「实时数据不可用 / 无法连接后端服务（/api/realtime?points=120）/

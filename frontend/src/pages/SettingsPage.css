@@ -131,7 +131,70 @@
 }
 
 /* ==========================================================================
-   演示模式
+   运行模式
+   ========================================================================== */
+
+.settings__modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+.settings__mode {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--sp-4);
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-border-strong);
+  border-radius: var(--r-sm);
+  background: var(--c-surface-alt);
+  text-align: left;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.settings__mode:hover {
+  background: var(--c-surface);
+  border-color: var(--c-border-strong);
+}
+
+.settings__mode.is-active {
+  border-left-color: var(--c-primary);
+  background: var(--c-primary-light);
+}
+
+.settings__mode-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.settings__mode-name {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.settings__mode-desc {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.75;
+}
+
+.settings__mode-note {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--c-info-bg);
+  border-left: 3px solid var(--c-info);
+  font-size: var(--fs-sm);
+  color: var(--c-info);
+  line-height: 1.75;
+}
+
+/* ==========================================================================
+   工况设定
    ========================================================================== */
 
 .settings__demo-hint {

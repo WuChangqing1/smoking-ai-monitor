@@ -62,12 +62,22 @@ pnpm-debug.log*
 *.db-shm
 backend/data/*.db
 
-# ---- Large media: final monitor video is deployed separately, see README ----
-frontend/public/videos/*.mp4
-frontend/public/videos/*.mov
-frontend/public/videos/*.webm
+# ---- Large media: 视频一律不入库 ----
+# 源视频与监控视频都走"部署时单独上传"（见 README 第 7 节与
+# frontend/public/videos/README.md）。
+# 用通配规则而不是只忽略 frontend/public/videos/，
+# 因为视频素材可能临时放在仓库根目录（例如交付时给的 Video.mp4）。
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.avi
 !frontend/public/videos/.gitkeep
 !frontend/public/videos/README.md
+
+# ---- 本地校验中间产物 ----
+.parity-*.json
+.tmp-frames/
 
 # ---- Logs / runtime ----
 logs/

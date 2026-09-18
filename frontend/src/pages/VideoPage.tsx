@@ -15,6 +15,10 @@ import './VideoPage.css'
 
 interface VideoPageProps {
   meta: PlatformMeta | null
+  /** 主监控视频播放速率（源视频 10 s，0.5× 下演示周期约 20 s） */
+  playbackRate?: number
+  /** 主监控视频源时长（秒） */
+  videoDuration?: number
 }
 
 interface PointSlot {
@@ -72,7 +76,11 @@ const POINTS: PointSlot[] = [
   },
 ]
 
-export default function VideoPage({ meta }: VideoPageProps) {
+export default function VideoPage({
+  meta,
+  playbackRate = 0.5,
+  videoDuration = 10,
+}: VideoPageProps) {
   const main = POINTS[0]
   const timestamp = new Date().toLocaleString('zh-CN', { hour12: false })
 
@@ -114,17 +122,29 @@ export default function VideoPage({ meta }: VideoPageProps) {
                 tone="info"
                 hint="海康威视 DS-2CD2242CX8-L，400 万像素，25 fps"
               />
+              <MetricRow
+                label="源片时长"
+                value={videoDuration.toFixed(0)}
+                unit="s"
+                hint="主监控点演示视频的源时长"
+              />
+              <MetricRow
+                label="播放速率"
+                value={`${playbackRate}×`}
+                tone="info"
+                hint={`约 ${(videoDuration / playbackRate).toFixed(0)} 秒完成一个演示周期（浏览器侧调速，不重新编码）`}
+              />
             </MetricList>
           </Panel>
 
           <Panel title="画面说明" icon={<IconVideo size={14} />}>
             <p className="video-page__note">
-              原系统具备摄像头多点监控能力（点位 1~7）。当前演示环境仅
+              原系统具备摄像头多点监控能力（点位 1~7）。当前
               <strong> Camera 01 </strong>
-              具备真实画面素材，其余监控点显示为待切换状态，不生成模拟画面。
+              已接入现场画面，其余监控点待接入完成后陆续开放，未接入前显示为待切换状态。
             </p>
             <p className="video-page__note">
-              最终监控视频就绪后，只需将文件放置为
+              监控视频接入后，只需将文件放置为
               <code>public/videos/main-monitor.mp4</code>，全部监控点区域自动切换为视频播放，
               <strong>无需修改业务代码</strong>。
             </p>

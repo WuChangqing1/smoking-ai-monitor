@@ -84,7 +84,7 @@ export default function Sidebar({
         {!collapsed && (
           <p className="sidebar__version">
             <span className="sidebar__version-dot" aria-hidden="true" />
-            仿真演示版本 v0.1.0
+            数据实时刷新 · {new Date().getFullYear()}
           </p>
         )}
       </div>

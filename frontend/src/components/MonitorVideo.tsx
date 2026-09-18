@@ -16,8 +16,10 @@
  * 最终静默回退到静态监控画面，保证视频缺失时页面不报错、不白屏。
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { VIDEO_PLAYBACK_RATE } from '../video/videoTelemetry'
+import { useVideoSync } from '../video/VideoSyncContext'
 import './MonitorVideo.css'
 
 /** 固定视频路径：唯一替换约定（相对路径，便于部署在任意 URL 前缀下） */
@@ -39,6 +41,8 @@ interface MonitorVideoProps {
   className?: string
   /** 视频之上的浮层（例如检测框说明） */
   overlay?: ReactNode
+  /** 是否把该视频作为全站同步时间源注册到 VideoSyncContext（主监控点使用） */
+  asTimeSource?: boolean
 }
 
 type Mode = 'probing' | 'video' | 'fallback' | 'none'
@@ -51,9 +55,19 @@ export default function MonitorVideo({
   placeholderText = '该监控点画面待切换',
   className = '',
   overlay,
+  asTimeSource = false,
 }: MonitorVideoProps) {
   const [mode, setMode] = useState<Mode>(hasStream ? 'probing' : 'none')
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const sync = useVideoSync()
+
+  /** 视频不可用时通知上下文，使全站回退到后端数据 */
+  const markUnavailable = sync?.markUnavailable
+  const register = sync?.register
+  const goFallback = useCallback(() => {
+    setMode('fallback')
+    if (asTimeSource) markUnavailable?.()
+  }, [asTimeSource, markUnavailable])
 
   // 探测视频是否真的存在（区分"404"与"SPA 回退返回的 index.html"）
   useEffect(() => {
@@ -75,10 +89,10 @@ export default function MonitorVideo({
         if (resp.ok && type.startsWith('video/')) {
           setMode('video')
         } else {
-          setMode('fallback')
+          goFallback()
         }
       } catch {
-        if (!cancelled) setMode('fallback')
+        if (!cancelled) goFallback()
       }
     }
 
@@ -86,7 +100,7 @@ export default function MonitorVideo({
     return () => {
       cancelled = true
     }
-  }, [hasStream])
+  }, [hasStream, goFallback])
 
   // 某些浏览器对 autoplay 策略更严格，显式 play() 一次并捕获失败
   useEffect(() => {
@@ -101,6 +115,48 @@ export default function MonitorVideo({
       })
     }
   }, [mode])
+
+  /**
+   * 播放速率：0.5×，源视频 10 s → 演示周期约 20 s。
+   *
+   * 不只在初始化时设置一次 —— 部分浏览器在 load / play / seek 之后会把
+   * playbackRate 重置回 1.0，因此在这几个时机都重新应用。
+   */
+  useEffect(() => {
+    if (mode !== 'video') return
+    const el = videoRef.current
+    if (!el) return
+
+    const applyRate = () => {
+      if (el.playbackRate !== VIDEO_PLAYBACK_RATE) {
+        el.playbackRate = VIDEO_PLAYBACK_RATE
+      }
+    }
+
+    applyRate()
+    el.addEventListener('loadedmetadata', applyRate)
+    el.addEventListener('loadeddata', applyRate)
+    el.addEventListener('canplay', applyRate)
+    el.addEventListener('play', applyRate)
+    el.addEventListener('playing', applyRate)
+    el.addEventListener('seeked', applyRate)
+
+    return () => {
+      el.removeEventListener('loadedmetadata', applyRate)
+      el.removeEventListener('loadeddata', applyRate)
+      el.removeEventListener('canplay', applyRate)
+      el.removeEventListener('play', applyRate)
+      el.removeEventListener('playing', applyRate)
+      el.removeEventListener('seeked', applyRate)
+    }
+  }, [mode])
+
+  // 把主监控视频注册为全站同步时间源
+  useEffect(() => {
+    if (!asTimeSource || !register) return
+    register(mode === 'video' ? videoRef.current : null)
+    return () => register(null)
+  }, [asTimeSource, register, mode])
 
   // 探测期间不显示任何画面元素，避免闪一下又切换
   const visible: Mode = mode === 'probing' ? 'none' : mode
@@ -118,7 +174,10 @@ export default function MonitorVideo({
           loop
           playsInline
           preload="auto"
-          onError={() => setMode('fallback')}
+          /* 工业监控画面不显示播放器控件（进度条/音量/全屏） */
+          controls={false}
+          disablePictureInPicture
+          onError={goFallback}
         />
       )}
 
@@ -126,7 +185,7 @@ export default function MonitorVideo({
         <img
           className="monitor-video__media"
           src={MONITOR_FALLBACK_SRC}
-          alt="制丝线监控画面（静态回退，等待监控视频接入）"
+          alt="制丝线监控画面（静态回退）"
           onError={() => setMode('none')}
         />
       )}
@@ -136,7 +195,7 @@ export default function MonitorVideo({
           <span className="monitor-video__placeholder-mark" aria-hidden="true" />
           <p className="monitor-video__placeholder-title">{placeholderText}</p>
           <p className="monitor-video__placeholder-desc">
-            监控视频生成完成后，将文件放置为
+            监控视频接入后，将文件放置为
             <code>public/videos/main-monitor.mp4</code> 即可自动显示。
           </p>
         </div>
@@ -152,9 +211,7 @@ export default function MonitorVideo({
 
       {visible !== 'none' && <span className="monitor-video__camera">{cameraLabel}</span>}
 
-      {mode === 'fallback' && (
-        <span className="monitor-video__notice">静态监控画面 · 等待视频接入</span>
-      )}
+      {mode === 'fallback' && <span className="monitor-video__notice">静态监控画面</span>}
 
       {overlay}
     </div>

@@ -54,6 +54,69 @@ class PlatformMeta(BaseModel):
     monitor_points: int
     devices: dict[str, int]
     data_rate_hz: int
+    #: 运行模式：video_sync（视频同步演示，默认） / automatic（自动工况循环）
+    run_mode: Literal["automatic", "video_sync"]
+    #: 视频同步模式下主监控视频的源时长（秒）
+    video_duration_seconds: float
+    #: 主监控视频的默认播放速率（不重新编码，浏览器侧调速）
+    video_playback_rate: float
+
+
+# ---- 视频同步遥测 -----------------------------------------------------------
+
+
+class VideoKeyframeOut(BaseModel):
+    """遥测关键帧，供前端插值使用（与后端解算结果一致）。"""
+
+    t: float
+    distance: float
+    risk: float
+    coverage: float
+    speed_ratio: float
+
+
+class VideoTelemetryOut(BaseModel):
+    """按 video.currentTime 解算的一帧遥测。"""
+
+    t: float
+    sim_state: SimStateT
+    sim_state_text: str
+    risk_index: float
+    risk_level: RiskLevelT
+    risk_level_text: str
+    risk_trend: RiskTrendT
+    risk_trend_text: str
+    distance: float
+    baseline_distance: float
+    delta: float
+    coverage: float
+    vision_label: str
+    vision_label_text: str
+    vision_confidence: float
+    conveyor_speed: float
+    conveyor_speed_baseline: float
+    equipment_load: float
+    temperature: float
+    humidity: float
+    fusion_verdict: FusionVerdictT
+    fusion_verdict_text: str
+    fusion_reason: str
+
+
+class VideoSyncInfoOut(BaseModel):
+    """视频同步模式的元信息 + 关键帧轨迹。
+
+    前端拿关键帧做本地插值，从而在 250~500 ms 的 UI 刷新节奏下
+    既不产生高频 HTTP 请求，又与后端解算结果完全一致。
+    """
+
+    run_mode: Literal["automatic", "video_sync"]
+    duration_seconds: float
+    playback_rate: float
+    sample_rate_hz: int
+    baseline_distance: float
+    alarm_threshold: float
+    keyframes: list[VideoKeyframeOut]
 
 
 # ---- 实时数据 ---------------------------------------------------------------

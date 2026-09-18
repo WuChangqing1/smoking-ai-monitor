@@ -7,6 +7,8 @@ from fastapi import APIRouter
 from app.schemas import PlatformMeta, StatusItem, SystemStatus
 from app.services.devices import TOTAL_DEVICES
 from app.services.simulation import get_engine
+from app.services.video_sync import VIDEO_SYNC_DURATION
+from app.routers.video_sync import VIDEO_PLAYBACK_RATE
 
 router = APIRouter(prefix="/api", tags=["system"])
 
@@ -18,7 +20,7 @@ PROJECT_NAME = "视觉识别及雷达技术在制丝线物流监视的研究与�
 def system_status() -> SystemStatus:
     """顶栏与首页状态卡的数据源。
 
-    所有字段都由同一个仿真引擎快照派生，因此与 /api/realtime 完全一致。
+    所有字段都由同一个数据引擎快照派生，因此与 /api/realtime 完全一致。
     """
     engine = get_engine()
     snapshot = engine.snapshot()
@@ -36,7 +38,7 @@ def system_status() -> SystemStatus:
             label="系统运行",
             state="ok",
             text="正常",
-            detail=f"演示模式：{snapshot.sim_state_text}",
+            detail=f"当前工况：{snapshot.sim_state_text}",
         ),
         StatusItem(
             key="ai",
@@ -88,9 +90,13 @@ def meta() -> PlatformMeta:
         platform_name=PLATFORM_NAME,
         project_name=PROJECT_NAME,
         mode="simulation" if settings.is_simulation else "realtime",
-        mode_note="比赛展示 / 仿真环境，接口结构预留真实设备接入能力",
+        # 对外表述：说明数据来源与设备接入能力即可
+        mode_note="数据由平台监控服务统一提供，接口结构已预留设备接入能力",
         conveyor_line="制丝线",
         monitor_points=7,
         devices={"radar": 3, "camera": 15, "total": TOTAL_DEVICES},
         data_rate_hz=settings.data_rate_hz,
+        run_mode="video_sync" if settings.is_video_sync else "automatic",
+        video_duration_seconds=VIDEO_SYNC_DURATION,
+        video_playback_rate=VIDEO_PLAYBACK_RATE,
     )

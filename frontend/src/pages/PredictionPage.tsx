@@ -20,6 +20,8 @@ import { Badge, EmptyState, SectionTitle, Skeleton } from '../components/Badge'
 import { IconInfo, IconKnowledge, IconPredict, IconRadar } from '../components/icons'
 import { api } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
+import { useVideoSync } from '../video/VideoSyncContext'
+import { buildSyncedPrediction } from '../video/syncedTelemetry'
 import type { RiskLevel } from '../types'
 import './PredictionPage.css'
 
@@ -54,7 +56,21 @@ function similarityTone(similarity: number): 'normal' | 'info' | 'warning' {
 }
 
 export default function PredictionPage() {
-  const prediction = useFetch(api.prediction, { intervalMs: 3000 })
+  const polled = useFetch(api.prediction, { intervalMs: 3000 })
+  const sync = useVideoSync()
+
+  /**
+   * 视频同步模式下，预测由当前遥测与本轮轨迹派生，
+   * 从而与画面阶段严格一致（normal / attention / warning / alarm 各自的结论不同）。
+   */
+  const syncedPrediction = useMemo(() => {
+    if (!sync || sync.runMode !== 'video_sync' || !sync.available) return null
+    return buildSyncedPrediction(sync.telemetry, sync.trend)
+  }, [sync])
+
+  const prediction = syncedPrediction
+    ? { data: syncedPrediction, error: null, loading: false, refresh: polled.refresh }
+    : polled
 
   const data = prediction.data
 

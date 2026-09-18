@@ -22,6 +22,8 @@ import type {
   RealtimeSnapshot,
   SystemStatus,
   TraceQuery,
+  VideoSyncInfo,
+  VideoTelemetryPayload,
 } from '../types'
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, '') ?? ''
@@ -147,6 +149,16 @@ export const api = {
   /** 知识库异常类型列表（筛选项来源） */
   knowledgeTypes: () => request<string[]>('/api/knowledge/types'),
 
+  /** 视频同步模式信息与关键帧轨迹 */
+  videoSyncInfo: () => request<VideoSyncInfo>('/api/video-sync/info'),
+
+  /**
+   * 按视频时间解算遥测（低频校对用）。
+   * 前端本地插值已能得到一致结果，本接口用于定期校验两边是否漂移。
+   */
+  videoSyncTelemetry: (t: number, duration: number) =>
+    request<VideoTelemetryPayload>(`/api/video-sync/telemetry${toQuery({ t, duration })}`),
+
   /** 智能预警（未来 30 分钟风险预测） */
   prediction: () => request<Prediction>('/api/prediction'),
 
@@ -160,8 +172,8 @@ export const api = {
   simulationReset: () => request<{ ok: boolean; message: string }>('/api/simulation/reset', { method: 'POST' }),
 
   /**
-   * 演示模式：强制进入指定仿真状态。
-   * 仅供答辩前录屏使用，刻意不放在主界面显眼位置。
+   * 工况设定：手动指定当前运行工况。
+   * 用于现场联调、阈值校验与应急演练时复现特定工况。
    */
   setScenario: (scenario: 'normal' | 'attention' | 'warning' | 'alarm') =>
     request<{ ok: boolean; message: string; sim_state: string }>(
@@ -169,7 +181,7 @@ export const api = {
       { method: 'POST' },
     ),
 
-  /** 退出演示模式，恢复自动状态循环 */
+  /** 恢复自动工况循环 */
   clearScenario: () =>
     request<{ ok: boolean; message: string; sim_state: string }>('/api/simulation/scenario', {
       method: 'POST',

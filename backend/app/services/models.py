@@ -1,4 +1,4 @@
-"""仿真引擎的数据结构。
+"""监控数据引擎的数据结构。
 
 这些 dataclass 是后端内部的唯一数据口径，Pydantic 响应模型在
 ``app/schemas.py`` 中定义，两边字段名保持一致，避免"两套真相"。
@@ -16,7 +16,7 @@ FusionVerdict = Literal["normal", "attention", "warning", "alarm"]
 AlarmLevel = Literal["info", "warning", "critical"]
 AlarmStatus = Literal["pending", "processing", "resolved", "archived"]
 
-# 状态机中可被"演示场景"直接指定的状态（stopped 由启停控制管理，不在此列）
+# 状态机中可被"工况设定"直接指定的状态（stopped 由启停控制管理，不在此列）
 ScenarioName = Literal["normal", "attention", "warning", "alarm"]
 
 #: 状态顺序，用于判断状态是"升级"还是"恢复"

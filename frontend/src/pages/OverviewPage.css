@@ -26,6 +26,43 @@
   padding: var(--sp-3) var(--sp-3) 0;
 }
 
+/* ==========================================================================
+   画面进度条（说明数值与画面同步，属信息展示而非播放器控件）
+   ========================================================================== */
+
+.overview__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3) 0;
+}
+
+.overview__progress-label {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--c-info);
+  white-space: nowrap;
+}
+
+.overview__progress-track {
+  flex: 1;
+  height: 3px;
+  min-width: 60px;
+  border-radius: 2px;
+  background: var(--c-border);
+  overflow: hidden;
+}
+
+.overview__progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--c-info);
+  border-radius: 2px;
+  /* 用轻微过渡让进度推进更平滑，不影响数据本身 */
+  transition: width 0.16s linear;
+}
+
 /* 视频下方信息条 */
 .overview__video-meta {
   display: flex;
