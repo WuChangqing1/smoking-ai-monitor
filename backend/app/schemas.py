@@ -119,6 +119,40 @@ class VideoSyncInfoOut(BaseModel):
     keyframes: list[VideoKeyframeOut]
 
 
+# ---- 视频异常检测框（YOLO 风格展示）-----------------------------------------
+
+
+class VideoDetectionBoxOut(BaseModel):
+    """按 video.currentTime 解算的异常检测框。
+
+    ``visible`` 为 True 表示视觉模型已确认异常区域。
+    位置与尺寸在同一摄像头的 warning / alarm 阶段**完全相同**，
+    只有 ``severity``（决定边框颜色）与 ``confidence`` 变化。
+    """
+
+    camera_id: str
+    visible: bool
+    x: float = Field(description="左上角 x，相对整帧比例 0~1")
+    y: float = Field(description="左上角 y，相对整帧比例 0~1")
+    width: float = Field(description="宽度，相对整帧比例 0~1")
+    height: float = Field(description="高度，相对整帧比例 0~1")
+    label: str = Field(description="模型类别，例如 material_accumulation")
+    label_text: str = Field(description="界面显示名，例如 物料堆积")
+    confidence: float = Field(description="概率模型输出置信度，不是准确率")
+    severity: Literal["none", "warning", "alarm"]
+    evidence_image: str | None = Field(
+        default=None, description="异常证据图路径（相对站点根）；无框时为 None"
+    )
+
+
+class VideoDetectionConfigOut(VideoDetectionBoxOut):
+    """检测框配置（与 t 无关的固定部分），供前端本地解算使用。"""
+
+    active_from_risk: float
+    evidence_time: float
+    evidence_confidence: float
+
+
 # ---- 实时数据 ---------------------------------------------------------------
 
 
@@ -288,6 +322,13 @@ class AiAnalysisOut(BaseModel):
 class AlarmDetailOut(AlarmOut):
     baseline_distance: float
     snapshot: str | None
+    evidence_image: str | None = Field(
+        default=None,
+        description="异常证据图路径（带检测框的截图）；无证据图时为 None",
+    )
+    evidence_note: str | None = Field(
+        default=None, description="面向现场人员的证据说明"
+    )
     radar_trend: list[SimSampleOut]
     ai_analysis: AiAnalysisOut
     timeline: list[TimelineEntryOut]

@@ -1,0 +1,45 @@
+/* ==========================================================================
+   YOLO 风格异常检测框
+   与视频同尺寸叠放，百分比定位；不做发光/呼吸/闪烁等动效
+   ========================================================================== */
+
+.detection-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* 覆盖在视频之上，但不遮挡叠加层的其他信息 */
+  z-index: 2;
+}
+
+.detection-overlay__box {
+  position: absolute;
+  /* 边框线宽用相对单位，随画面缩放保持观感一致 */
+  border: 0.28vmin solid transparent;
+  border-width: max(2px, 0.28vmin);
+  border-radius: var(--r-xs);
+  box-sizing: border-box;
+}
+
+.detection-overlay__label {
+  position: absolute;
+  left: -1px;
+  bottom: 100%;
+  margin-bottom: 3px;
+  padding: 2px 7px;
+  border-radius: var(--r-xs);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: max(11px, 1.35vmin);
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+/* 框贴近画面上沿时，把标签挪到框内，避免被裁掉 */
+.detection-overlay__box[style*='top: 0%'] .detection-overlay__label {
+  bottom: auto;
+  top: 0;
+  margin-bottom: 0;
+  margin-top: 2px;
+}

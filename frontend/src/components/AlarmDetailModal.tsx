@@ -127,6 +127,30 @@ export default function AlarmDetailModal({
             </div>
           </section>
 
+          {/* ---------- 异常证据图 ---------- */}
+          {detail.evidence_image && (
+            <section className="alarm-detail__section">
+              <SectionTitle
+                extra={
+                  <Badge tone={detail.level === 'critical' ? 'critical' : 'warning'}>
+                    YOLO 检测结果
+                  </Badge>
+                }
+              >
+                异常证据图
+              </SectionTitle>
+
+              <figure className="alarm-detail__evidence-figure">
+                <img
+                  src={detail.evidence_image}
+                  alt={`${detail.code} 视觉模型检测到${detail.event_type_text}异常区域的带框截图`}
+                  loading="lazy"
+                />
+                <figcaption>{detail.evidence_note}</figcaption>
+              </figure>
+            </section>
+          )}
+
           {/* ---------- 当时监控画面 + 雷达趋势 ---------- */}
           <section className="alarm-detail__section">
             <SectionTitle>当时监控画面与数据走向</SectionTitle>

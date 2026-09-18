@@ -157,11 +157,28 @@
 - [x] 后端 36 项新测试 + 前后端遥测对等校验脚本
 - [x] 视频 fallback 保留（HEAD 探测 + onError + 静态图）
 
+## 轮次 12：YOLO 风格异常框与视觉证据链（Commit 16）
+
+- [x] 主监控视频叠加固定 YOLO 风格异常检测框（位置/尺寸恒定，不跟踪不缩放）
+- [x] 仅 warning 及以上显示；normal / attention 无框
+- [x] warning 橙 / alarm 红；标签 `物料堆积 0.92`
+- [x] 置信度确定性插值（warning 0.888→0.93，alarm 0.93→0.944）
+- [x] 统一解算：`resolveVideoDetectionBox(t, cameraId)`（前后端等价 + 对等校验）
+- [x] 首页与雷视联动复用同一个框（由 VideoSyncContext 统一派生）
+- [x] 生成带框证据图两张（ffmpeg，零新依赖；坐标读自后端配置）
+- [x] 报警详情新增「异常证据图」区块 + 现场复核说明
+- [x] 数据溯源复用同一详情弹层，形成完整证据链
+- [x] 后端 `/api/video-sync/detection-box` 与 `/detection-config`
+- [x] 报警详情新增 `evidence_image` / `evidence_note` 字段
+- [x] 按 cameraId 组织配置，未配置的摄像头安全返回空框（Camera 02~04 预留）
+- [x] 修正 Python `round()` 银行家舍入与 JS `Math.round()` 不一致的真实缺陷
+- [x] 后端新增 60 项测试；检测框对等校验 303 组合通过
+
 ## 待办（后续可选）
 
+- [ ] Camera 02 / 03 / 04 视频到位后接入（加视频 + 加 box 配置即可，等用户提供）
 - [ ] 可选：接入现场设备直采（`SMOKING_SIMULATION=0` + 数据源适配器，见 README 第 11 节）
 - [ ] 可选：如需域名访问，添加 DNS A 记录（大陆服务器 80/443 需域名已备案）
-- [ ] 可选：下线备用入口 `bash scripts/remote-ops.sh rollback`（主入口不受影响）
 
 ## 待确认 / 风险
 

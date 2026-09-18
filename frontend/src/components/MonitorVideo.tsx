@@ -20,6 +20,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { VIDEO_PLAYBACK_RATE } from '../video/videoTelemetry'
 import { useVideoSync } from '../video/VideoSyncContext'
+import DetectionOverlay from './DetectionOverlay'
 import './MonitorVideo.css'
 
 /** 固定视频路径：唯一替换约定（相对路径，便于部署在任意 URL 前缀下） */
@@ -43,6 +44,8 @@ interface MonitorVideoProps {
   overlay?: ReactNode
   /** 是否把该视频作为全站同步时间源注册到 VideoSyncContext（主监控点使用） */
   asTimeSource?: boolean
+  /** 是否叠加 YOLO 风格异常检测框（主监控点使用；其他点位暂无检测配置） */
+  showDetection?: boolean
 }
 
 type Mode = 'probing' | 'video' | 'fallback' | 'none'
@@ -56,10 +59,18 @@ export default function MonitorVideo({
   className = '',
   overlay,
   asTimeSource = false,
+  showDetection = false,
 }: MonitorVideoProps) {
   const [mode, setMode] = useState<Mode>(hasStream ? 'probing' : 'none')
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const sync = useVideoSync()
+
+  /**
+   * 异常检测框：直接取全站统一解算结果，组件本身不解算，
+   * 保证首页与雷视联动的框完全一致。
+   * 静态图回退时同样按状态显示（画面与框仍在同一 16:9 容器内，不会错位）。
+   */
+  const detectionBox = showDetection ? (sync?.detection ?? null) : null
 
   /** 视频不可用时通知上下文，使全站回退到后端数据 */
   const markUnavailable = sync?.markUnavailable
@@ -203,6 +214,10 @@ export default function MonitorVideo({
 
       {/* 探测中：保持容器尺寸稳定，不出现布局跳动 */}
       {mode === 'probing' && <div className="monitor-video__probing" aria-hidden="true" />}
+
+      {/* ---- YOLO 风格异常检测框：与视频内容同尺寸叠放，百分比定位 ----
+           仅在 warning 及以上阶段渲染；循环回到 normal 时自然消失 */}
+      {visible !== 'none' && <DetectionOverlay box={detectionBox} />}
 
       {/* ---- 轻量叠加信息，不堆遮罩 ---- */}
       {showTimestamp && visible !== 'none' && (

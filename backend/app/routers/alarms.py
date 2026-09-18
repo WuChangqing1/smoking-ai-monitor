@@ -18,6 +18,7 @@ from app.services.models import (
     event_type_text,
 )
 from app.services.simulation import get_engine
+from app.services.video_detection import evidence_image_for
 
 router = APIRouter(prefix="/api", tags=["alarms"])
 
@@ -150,12 +151,21 @@ def alarm_detail(event_id: str) -> AlarmDetailOut:
     trend = [_sample_out(s) for s in engine.history(60)]
 
     base = _alarm_out(record)
+    evidence = evidence_image_for(record.event_type)
     return AlarmDetailOut(
         **base.model_dump(),
         baseline_distance=record.baseline_distance,
         # 当时监控画面：主监控点静态帧（视频就绪后为同一路径）
         # 用相对路径，使前端在根路径或任意子路径下部署都能正确解析
         snapshot="images/main-monitor-fallback.png",
+        # 异常证据图：视觉模型检测到异常区域后生成的带框截图，
+        # 供现场人员复核；无对应证据图的异常类型返回 None
+        evidence_image=evidence,
+        evidence_note=(
+            "视觉模型检测到物料堆积异常区域，系统已生成带框截图供现场人员复核。"
+            if evidence
+            else None
+        ),
         radar_trend=trend,
         ai_analysis=AiAnalysisOut(
             vision_label=record.visual_result,

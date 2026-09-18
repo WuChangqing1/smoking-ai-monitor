@@ -125,6 +125,25 @@ def clamp_video_time(t: float, duration: float = VIDEO_SYNC_DURATION) -> float:
     return max(0.0, min(duration, value))
 
 
+def round_half_up(value: float, digits: int) -> float:
+    """四舍五入（half-up）。
+
+    **必须显式实现**：Python 内置 ``round()`` 用的是银行家舍入（half-to-even），
+    而前端 JavaScript 的 ``Math.round()`` 是 half-up。两者在恰好落在 .5 的值上
+    会差一个最小单位，导致前后端遥测/置信度出现 0.001 级不一致
+    （实测在 t=8.7 的检测框置信度上复现）。
+
+    本模块所有对外数值统一走本函数，与前端保持逐位一致。
+    """
+    factor = 10.0**digits
+    scaled = value * factor
+    # 先消掉二进制表示误差（例如 0.9305*1000 = 930.4999999999999）
+    nearest = round(scaled)
+    if abs(scaled - nearest) < 1e-9:
+        scaled = float(nearest)
+    return math.floor(scaled + 0.5) / factor
+
+
 def _lerp(a: float, b: float, ratio: float) -> float:
     return a + (b - a) * ratio
 
@@ -231,37 +250,37 @@ def resolve_video_telemetry(raw_t: float, duration: float = VIDEO_SYNC_DURATION)
     )
     risk_jitter = 0.5 * math.sin(2.0 * math.pi * 2.3 * timeline_t + 1.1)
 
-    distance = round(frame.distance + distance_jitter, 4)
+    distance = round_half_up(frame.distance + distance_jitter, 4)
 
     # 覆盖率与风险沿用关键帧值并加极小确定性扰动
-    coverage = round(max(0.0, min(0.99, frame.coverage + 0.004 * math.sin(2.0 * math.pi * 2.9 * timeline_t))), 4)
+    coverage = round_half_up(max(0.0, min(0.99, frame.coverage + 0.004 * math.sin(2.0 * math.pi * 2.9 * timeline_t))), 4)
     risk = max(0.0, min(100.0, frame.risk + risk_jitter))
 
-    conveyor_speed = round(CONVEYOR_BASE_SPEED * frame.speed_ratio, 3)
+    conveyor_speed = round_half_up(CONVEYOR_BASE_SPEED * frame.speed_ratio, 3)
     # 设备负载：与 severity 同向。severity 由 risk 归一化得到，与 automatic 模式同一口径
     severity = max(0.0, min(1.0, risk / 100.0))
-    equipment_load = round(max(0.0, min(100.0, 48.0 + 38.0 * severity)), 1)
+    equipment_load = round_half_up(max(0.0, min(100.0, 48.0 + 38.0 * severity)), 1)
 
     # 环境仅作辅助上下文：缓慢跟随，不因堵料剧烈变化
-    temperature = round(TEMP_BASE + 1.3 * severity + 0.15 * math.sin(0.7 * timeline_t), 2)
-    humidity = round(HUMIDITY_BASE - 3.0 * severity + 0.4 * math.cos(0.5 * timeline_t), 1)
+    temperature = round_half_up(TEMP_BASE + 1.3 * severity + 0.15 * math.sin(0.7 * timeline_t), 2)
+    humidity = round_half_up(HUMIDITY_BASE - 3.0 * severity + 0.4 * math.cos(0.5 * timeline_t), 1)
 
     vision_label, vision_confidence = _vision_for_risk(risk)
     trend = _risk_trend(timeline_t)
     level = risk_level_of(risk)
 
     return VideoTelemetry(
-        t=round(t, 3),
+        t=round_half_up(t, 3),
         sim_state=_state_for_risk(risk),
         sim_state_text=STATE_TEXT[_state_for_risk(risk)],  # type: ignore[index]
-        risk_index=round(risk, 1),
+        risk_index=round_half_up(risk, 1),
         risk_level=level,
         risk_level_text=RISK_LEVEL_TEXT[level],
         risk_trend=trend,
         risk_trend_text=RISK_TREND_TEXT[trend],  # type: ignore[index]
         distance=distance,
         baseline_distance=BASELINE_DISTANCE,
-        delta=round(distance - BASELINE_DISTANCE, 4),
+        delta=round_half_up(distance - BASELINE_DISTANCE, 4),
         coverage=coverage,
         vision_label=vision_label,
         vision_label_text=VISION_LABEL_TEXT[vision_label],

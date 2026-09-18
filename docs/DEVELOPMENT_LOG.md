@@ -678,3 +678,88 @@
 
 **Commit**：`d1b39542846f97345652ac9761ff45b782c6db96`
 （`fix: remove leftover demo wording and tidy deployment docs` → 已推送）
+
+---
+
+## 轮次 12 — YOLO 风格异常框与视觉证据链
+
+**目标**：在主监控视频上叠加固定异常检测框，并把带框证据图接入报警详情与数据溯源。
+
+**定位**：这是**展示层**的视觉异常表达，不是真实在线推理 ——
+不运行 YOLO、不加载模型权重、不引入推理依赖；框位置与尺寸固定，
+只随 video_sync 阶段决定是否显示。"有框"即代表"视觉已确认异常区域"。
+
+**检测框**
+
+| 项 | 值 |
+|---|---|
+| 归一化坐标 | x=0.3359, y=0.2639, w=0.2070, h=0.4792 |
+| 像素坐标（1280×720） | 430,190 → 695,535 |
+| 显示阶段 | 风险 ≥ 55（warning 及以上）；normal / attention 不显示 |
+| 边框颜色 | warning `#d97706` 橙 / alarm `#c62828` 红 |
+| 标签 | `物料堆积 0.92`（内部类别仍为 `material_accumulation`） |
+| 置信度 | warning 0.888→0.93，alarm 0.93→0.944（确定性插值，非随机） |
+
+**框位置如何确定**：物料带是灰棕色（实测 RGB≈111,90,86），与深色输送带
+对比度低，纯像素分割不可靠（试过两轮阈值都误判了灰白设备）。
+因此改用**人工目视 + ffmpeg 叠加候选框迭代**：先抽帧确认物料带走向，
+再生成 8 个候选框（probe A~J）逐一目视比对，最终选定物料带完整落在框内
+中左部、且不含大片空输送带与设备区域的一组坐标。
+
+**证据图**
+
+| 项 | 值 |
+|---|---|
+| 生成方式 | `scripts/generate_evidence.py`（ffmpeg + 标准库，**零新依赖**） |
+| 坐标来源 | 从 `app.services.video_detection` 读取 —— **单一事实源**，脚本内不重复写 |
+| warning 图 | `images/evidence/main-camera-material-accumulation.jpg`（t=8.5s, 0.92, 橙） |
+| alarm 图 | `images/evidence/main-camera-material-accumulation-alarm.jpg`（t=9.5s, 0.94, 红） |
+| 尺寸 | 1280×720（16:9，未拉伸） |
+| 接入位置 | 报警详情弹层「异常证据图」区块；数据溯源复用同一弹层 |
+
+**关键决策**
+
+1. **前后端同源**：框由 `telemetry.risk_index` 派生，与数值、趋势同源，
+   首页与雷视联动拿到的是**同一个对象**，架构上不可能出现页面间不一致。
+2. **overlay 与视频同尺寸**：`.monitor-video` 本身为 `aspect-ratio: 16/9`，
+   overlay 绝对定位铺满，百分比坐标天然正确 —— 不受 `object-fit` 影响。
+3. **静态图回退时同样显示框**：fallback 图与视频在同一 16:9 容器内，不会错位。
+4. **两张证据图而非一张**：warning 橙框 + alarm 红框，与网页状态一一对应；
+   只做一张会导致 alarm 阶段图文颜色不符。
+5. **按 cameraId 组织配置**：`DETECTION_CONFIGS` 字典 + `detectionConfigFor()`；
+   Camera 02~04 接入时只需追加配置项，解析逻辑不动。
+6. **不伪造自动发送**：文案统一为"系统已生成带框截图供现场人员复核"，
+   不写"已通过钉钉自动发送"。
+
+**修正的真实缺陷**
+
+- **Python `round()` 是银行家舍入，JS `Math.round()` 是 half-up** ——
+  两者在恰好落在 .5 的值上差一个最小单位，实测在 t=8.7 的检测框置信度上
+  复现（后端 0.931 / 前端 0.932）。已在 `video_sync.py` 显式实现
+  `round_half_up()` 并替换全部对外数值的舍入，前后端恢复逐位一致。
+- 前端 `resolveVideoDetectionBox` 初版只接收 risk 而非 `t`，与后端不等价、
+  无法做对等校验（校验脚本一跑就暴露了 303 处不一致）。
+  已改为接收 `t`（内部解算遥测），另提供 `resolveDetectionBoxForRisk`
+  供已有遥测的页面直接派生。
+
+**新增校验工具**
+
+- `scripts/export_parity_fixtures.py`：导出后端期望值
+- `frontend/scripts/check-detection-parity.mjs`：检测框对等校验
+- 遥测对等校验脚本默认路径统一为 `.parity-telemetry.json`
+
+**验证**
+
+| 检查项 | 结果 |
+|---|---|
+| 后端 pytest | **217 passed**（原 157 + 检测框与证据图 **60**） |
+| 遥测对等 | 101 时间点 × 6 字段一致 |
+| 检测框对等 | **303 组合（101 t × 3 camera）× 9 字段一致** |
+| 前端 tsc + vite build | 通过（632 模块，无警告） |
+| 检测框阶段 | t=0/4/5.5 无框；t=6/8 warning；t=9/10 alarm；t=12 夹到 10；t=-3 无框 |
+| 证据图静态资源 | 两张均 200 / `image/jpeg` |
+| 证据图接线 | 物料堆积类报警均带证据图；其他异常类型正确返回无 |
+| 循环与越界 | t 越界安全 clamp；循环回 0 框立即消失 |
+| 无新依赖 | 检测模块不引用 torch / ultralytics / cv2 / onnxruntime / numpy / PIL（有测试断言） |
+
+**Commit**：`待填`

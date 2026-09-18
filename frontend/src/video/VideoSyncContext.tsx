@@ -38,6 +38,11 @@ import {
   samplesUpTo,
   type VideoTelemetry,
 } from './videoTelemetry'
+import {
+  PRIMARY_DETECTION,
+  resolveDetectionBoxForRisk,
+  type DetectionBox,
+} from './videoDetection'
 
 export type RunMode = 'automatic' | 'video_sync'
 
@@ -69,6 +74,11 @@ export interface VideoSyncContextValue extends VideoSyncState {
   telemetry: VideoTelemetry
   /** 本轮 0 → currentTime 的趋势序列 */
   trend: VideoTelemetry[]
+  /**
+   * 当前的 YOLO 风格异常检测框。
+   * 由主监控点的遥测派生 —— 全站同一个框，页面不得自行解算。
+   */
+  detection: DetectionBox
 }
 
 const VideoSyncContext = createContext<VideoSyncContextValue | null>(null)
@@ -172,6 +182,15 @@ export function VideoSyncProvider({
     [currentTime],
   )
 
+  /**
+   * 异常检测框：与 telemetry 同源（都由 currentTime 派生），
+   * 因此首页与雷视联动拿到的是同一个框，不可能出现页面间不一致。
+   */
+  const detection = useMemo(
+    () => resolveDetectionBoxForRisk(telemetry.risk_index, PRIMARY_DETECTION.cameraId),
+    [telemetry.risk_index],
+  )
+
   const value = useMemo<VideoSyncContextValue>(
     () => ({
       currentTime,
@@ -186,6 +205,7 @@ export function VideoSyncProvider({
       setRunMode,
       telemetry,
       trend,
+      detection,
     }),
     [
       currentTime,
@@ -199,6 +219,7 @@ export function VideoSyncProvider({
       markUnavailable,
       telemetry,
       trend,
+      detection,
     ],
   )
 
@@ -225,4 +246,17 @@ export function useSyncedTelemetry(): { active: boolean; telemetry: VideoTelemet
 
   const active = ctx.runMode === 'video_sync' && ctx.available
   return { active, telemetry: active ? ctx.telemetry : null }
+}
+
+/**
+ * 当前异常检测框（全站统一）。
+ *
+ * 返回 null 表示当前无框或不处于画面同步模式 —— 页面据此不渲染 overlay。
+ * 与 `useSyncedTelemetry` 一样，由架构保证首页与雷视联动取到同一个框。
+ */
+export function useDetectionBox(): DetectionBox | null {
+  const ctx = useVideoSync()
+  if (!ctx) return null
+  if (ctx.runMode !== 'video_sync' || !ctx.available) return null
+  return ctx.detection.visible ? ctx.detection : null
 }

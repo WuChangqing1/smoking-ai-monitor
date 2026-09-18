@@ -310,6 +310,13 @@ export interface AlarmDetail extends AlarmRecord {
   baseline_distance: number
   /** 当时监控画面（静态图或视频帧） */
   snapshot: string | null
+  /**
+   * 异常证据图路径（视觉模型检测到异常区域后生成的带框截图）。
+   * 无对应证据图的异常类型为 null，此时不渲染证据区块。
+   */
+  evidence_image: string | null
+  /** 面向现场人员的证据说明 */
+  evidence_note: string | null
   /** 雷达趋势（用于详情页图表） */
   radar_trend: RealtimeSample[]
   /** AI 判断说明 */

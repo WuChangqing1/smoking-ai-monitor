@@ -6,24 +6,20 @@
  * 与后端导出的期望值逐点比对，确保两边不会漂移。
  *
  * 用法（在 frontend 目录）：
- *   node scripts/check-telemetry-parity.mjs ../.parity-backend.json
+ *   python ../scripts/export_parity_fixtures.py     # 先导出后端期望值
+ *   node scripts/check-telemetry-parity.mjs ../.parity-telemetry.json
  *
  * 退出码非 0 表示两边不一致，需要在提交前修好。
  */
 
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { readFileSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { build } from 'esbuild'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-
-// 前端实现是 TS，这里用 esbuild 现场转译后导入（项目已依赖 esbuild）
-import { build } from 'esbuild'
-import { writeFileSync, mkdtempSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { pathToFileURL } from 'node:url'
-
-const expectedPath = process.argv[2] ?? resolve(__dirname, '../../.parity-backend.json')
+const expectedPath = process.argv[2] ?? resolve(__dirname, '../../.parity-telemetry.json')
 const expected = JSON.parse(readFileSync(expectedPath, 'utf8'))
 
 const entry = resolve(__dirname, '../src/video/videoTelemetry.ts')

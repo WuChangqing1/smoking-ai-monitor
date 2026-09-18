@@ -213,6 +213,8 @@ export default function OverviewPage({
               hasStream={Boolean(point?.stream) || point === undefined}
               /* 主监控画面作为全站同步时间源：页面数值随它的 currentTime 变化 */
               asTimeSource
+              /* 同时叠加 YOLO 风格异常检测框（warning 及以上出现） */
+              showDetection
             />
           </div>
 

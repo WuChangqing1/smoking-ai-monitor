@@ -47,7 +47,33 @@
   gap: 0 var(--sp-6);
 }
 
-/* ---- 画面 + 趋势 ---- */
+/* ---- 异常证据图 ---- */
+.alarm-detail__evidence-figure {
+  margin: 0;
+}
+
+.alarm-detail__evidence-figure img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: #10181b;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+}
+
+.alarm-detail__evidence-figure figcaption {
+  margin-top: 7px;
+  padding: 8px var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--c-warning-bg);
+  border-left: 3px solid var(--c-warning);
+  font-size: var(--fs-sm);
+  color: #a35c05;
+  line-height: 1.75;
+}
+
+/* ---- 当时监控画面 + 雷达趋势 ---- */
 .alarm-detail__evidence {
   display: grid;
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);

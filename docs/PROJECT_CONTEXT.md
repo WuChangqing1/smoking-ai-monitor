@@ -138,6 +138,34 @@
   前端等价实现：`src/video/videoTelemetry.ts`（用 `check-telemetry-parity.mjs` 校验一致）
 - **循环不写库**：引擎 `event_recording=False`，历史报警保持 6 条样例
 
+## 10.2 视觉异常检测框与证据链（轮次 12）
+
+主监控视频在 **warning / alarm** 阶段叠加**固定** YOLO 风格异常框，
+并把带框截图作为正式证据接入报警详情与数据溯源。
+
+| 项 | 值 |
+|---|---|
+| 固定框（归一化） | x=0.3359, y=0.2639, w=0.2070, h=0.4792 |
+| 像素（1280×720） | 430,190 → 695,535 |
+| 显示阶段 | 风险 ≥ 55；normal / attention 不显示 |
+| 颜色 | warning 橙 `#d97706` / alarm 红 `#c62828` |
+| 标签 | `物料堆积 0.92`（内部类别 `material_accumulation`） |
+| 置信度 | warning 0.888→0.93，alarm 0.93→0.944（确定性插值） |
+| 证据图 | `images/evidence/main-camera-material-accumulation.jpg`（warning, t=8.5s）<br>`images/evidence/main-camera-material-accumulation-alarm.jpg`（alarm, t=9.5s） |
+
+- **框位置固定**：warning 与 alarm 使用完全相同的 x/y/width/height，
+  只有边框颜色与置信度变化；不做跟踪、不缩放、不移动、不闪烁。
+- **统一解算**：`resolveVideoDetectionBox(t, cameraId)`（后端 `video_detection.py`）
+  与前端 `videoDetection.ts` 等价，并有 303 组合对等校验。
+  首页与雷视联动由 `VideoSyncContext` 统一派生，**不可能出现页面间不一致**。
+- **证据图坐标单一事实源**：`scripts/generate_evidence.py` 从后端配置读取坐标，
+  不在脚本内重复写，保证网页框与图片框永远一致。
+- **无真实推理**：不运行 YOLO、不加载权重、不引入 torch/cv2 等依赖（有测试断言）。
+- **扩展性**：配置按 `cameraId` 组织，Camera 02~04 接入时追加配置项即可；
+  未配置的摄像头安全返回空框。
+- **舍入一致性**：Python `round()` 是银行家舍入、JS `Math.round()` 是 half-up，
+  对外数值统一走 `round_half_up()`，避免前后端 0.001 级偏差。
+
 **Commit**：`5a146982f9bfd435f22093414860ceb632a97cd4`
 （`feat: enable dedicated port entry for the platform` → 已推送）
 
