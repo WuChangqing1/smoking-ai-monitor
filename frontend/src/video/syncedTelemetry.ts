@@ -25,10 +25,10 @@ import { CONVEYOR_BASE_SPEED, VIDEO_PLAYBACK_RATE, type VideoTelemetry } from '.
 /** 风险趋势字面量（与后端 RiskTrendT 一致） */
 type RiskTrendValue = 'stable' | 'rising' | 'rising_fast' | 'falling'
 
-/** 主监控点（与后端 devices.py 的主点位定义一致） */
+/** 主监控点（与后端 devices.py 的 PRIMARY_POINT / CAMERA_NUMBER 一致） */
 const PRIMARY_POINT: MonitorPoint = {
   id: 'P02',
-  code: 'Camera 02',
+  code: 'Camera 01',
   name: '制丝线 2 号输送段',
   position: 2,
   device_id: 'RAD-02',

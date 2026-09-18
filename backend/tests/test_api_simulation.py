@@ -287,6 +287,34 @@ class TestDevices:
         assert len(with_stream) == 1
         assert with_stream[0]["position"] == 2
 
+    def test_primary_point_is_camera_01(self, client: TestClient) -> None:
+        """主监控画面的机位标识必须是 Camera 01。
+
+        机位编号与点位号是两套编号：主监控点是点位 2，但画面标识为 Camera 01。
+        曾经用点位号直接生成 "Camera NN"，导致核心监控画面被标成 Camera 02。
+        """
+        points = client.get("/api/monitor-points").json()
+        primary = next(p for p in points if p["position"] == 2)
+        assert primary["code"] == "Camera 01"
+
+    def test_realtime_reports_camera_01(self, client: TestClient) -> None:
+        """实时快照的监控点标识同样必须是 Camera 01（页面直接显示该字段）。"""
+        snapshot = client.get("/api/realtime").json()
+        assert snapshot["monitor_point"]["code"] == "Camera 01"
+        assert snapshot["monitor_point"]["position"] == 2
+
+    def test_camera_number_mapping_is_consistent(self, client: TestClient) -> None:
+        """每个点位的机位编号唯一，且与 CAMERA_NUMBER 映射一致。"""
+        from app.services.devices import CAMERA_NUMBER
+
+        points = client.get("/api/monitor-points").json()
+        codes = [p["code"] for p in points]
+        assert len(set(codes)) == len(codes), "机位编号出现重复"
+
+        for item in points:
+            expected = f"Camera {CAMERA_NUMBER[item['position']]:02d}"
+            assert item["code"] == expected
+
 
 # =============================================================================
 # 启停 / 重置 / 演示场景

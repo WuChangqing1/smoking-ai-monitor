@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.schemas import PlatformMeta, StatusItem, SystemStatus
-from app.services.devices import TOTAL_DEVICES
+from app.services.devices import POINT_LOCATIONS, PRIMARY_CAMERA, PRIMARY_POINT, TOTAL_DEVICES
 from app.services.simulation import get_engine
 from app.services.video_sync import VIDEO_SYNC_DURATION
 from app.routers.video_sync import VIDEO_PLAYBACK_RATE
@@ -65,7 +65,7 @@ def system_status() -> SystemStatus:
             label="视频监控",
             state="ok",
             text="在线",
-            detail="Camera 01 · 制丝线 2 号输送段",
+            detail=f"{PRIMARY_CAMERA} · {POINT_LOCATIONS[PRIMARY_POINT]}",
         ),
     ]
 

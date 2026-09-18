@@ -933,4 +933,61 @@ YOLO 检测框保留不变。
 | 双入口 | 主入口与 `/smoking/` 首页、视频、证据图均 200 |
 | 已有站点回归 | fitness(80) 200 |
 
+**Commit**：`c344c2eae68ad7c6cca38873ca00c34372b16b0a`
+（`fix: drop the closed-loop narrative from alarm details` → 已推送）
+
+---
+
+## 轮次 16 — 修正主监控画面的机位标识为 Camera 01
+
+**背景**：用户反馈核心监控画面上方显示的是 `Camera 02`，应为 `Camera 01`。
+
+**根因**：机位编号与点位号被混为一谈。后端 `monitor_points()` 原先用
+`f"Camera {position:02d}"` 由点位号直接生成机位标识，而主监控点是
+**点位 2**（制丝线 2 号输送段），于是主画面被标成了 `Camera 02`。
+
+这造成**三处口径冲突**：
+
+| 位置 | 原值 |
+|---|---|
+| 后端 `monitor_points()` / `primary_point()` → `/api/realtime` | `Camera 02` |
+| 前端 `syncedTelemetry.ts` 快照（video_sync 模式实际显示的值） | `Camera 02` |
+| 前端 `VideoPage.tsx` 机位表 | `Camera 01`（与用户预期一致） |
+
+**修正方式**：新增显式的机位编号映射，而不是用点位号顶替。
+
+```python
+CAMERA_NUMBER = {2: 1, 1: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7}
+PRIMARY_CAMERA = f"Camera {CAMERA_NUMBER[PRIMARY_POINT]:02d}"   # → "Camera 01"
+```
+
+- `monitor_points()` 改用 `CAMERA_NUMBER` 生成 code
+- `system.py` 的「视频监控」状态明细改用 `PRIMARY_CAMERA`，不再硬编码字符串
+- 前端 `syncedTelemetry.ts` 的 `PRIMARY_POINT.code` 同步为 `Camera 01`
+- `VideoPage.tsx` 机位表补注释，说明编号与点位号是两套编号
+
+**保留不变**：`device_id`（`RAD-02`）、`device_ip`（`192.168.1.198`）、
+`position`（2）、`id`（`P02`）全部未动 —— 编号只是**显示标识**，
+不影响数据关联（原始资料的报警记录同样是"设备位置 2 / .198"）。
+
+**新增**
+
+- `scripts/check_camera_mapping.py`：打印点位↔机位映射并断言一致性
+- `test_api_simulation.py` 新增 3 项回归测试：主监控点 code 为 `Camera 01`、
+  `/api/realtime` 返回 `Camera 01`、机位编号唯一且与 `CAMERA_NUMBER` 一致
+
+**验证**
+
+| 检查项 | 结果 |
+|---|---|
+| 后端 pytest | **220 passed**（原 217 + 3） |
+| 前端 tsc + vite build | 通过（632 模块，无警告） |
+| 映射一致性 | `check_camera_mapping.py` 通过；点位 2 → Camera 01 |
+| 公网 `/api/realtime` | `monitor_point.code = Camera 01` |
+| 公网 `/api/system/status` | video 明细 = `Camera 01 · 制丝线 2 号输送段` |
+| 全部 7 个点位 | 编号唯一；P02 为 Camera 01 且是唯一带 `stream` 的点位 |
+| 产物复查 | `Camera 01`×7、`Camera 02`×1（视频监控页待接入机位，正确） |
+| 检测框与证据图 | 未受影响，配置与资源均正常 |
+| 已有站点回归 | fitness(80) 200 |
+
 **Commit**：`待填`

@@ -28,7 +28,13 @@ interface PointSlot {
   kind: '雷达 + 视觉' | '仅视觉'
 }
 
-/** 4 个监控点：Camera 01 有真实画面，02~04 为待切换占位 */
+/**
+ * 4 个监控点：Camera 01 有真实画面，02~04 为待切换占位。
+ *
+ * 注意：机位编号与点位号是两套编号 —— 主监控画面是 Camera 01，
+ * 对应点位 2（制丝线 2 号输送段）；Camera 02 对应点位 1。
+ * 该映射与后端 devices.py 的 CAMERA_NUMBER 保持一致。
+ */
 const POINTS: PointSlot[] = [
   {
     camera: 'Camera 01',

@@ -28,8 +28,19 @@ POINT_LOCATIONS: dict[int, str] = {
 #: 具备激光雷达的点位（点位 1~3）
 RADAR_POINTS: tuple[int, ...] = (1, 2, 3)
 
-#: 主监控点
+#: 主监控点：制丝线 2 号输送段
 PRIMARY_POINT = 2
+
+#: 机位编号 → 点位。
+#:
+#: 监控画面上的 "Camera NN" 标识与点位号是两套编号，不是同一个数字：
+#: 主监控画面是 Camera 01（对应点位 2 / 制丝线 2 号输送段），
+#: 因此不能直接用点位号生成 "Camera NN"，否则主画面会被标成 Camera 02。
+#: 这里显式声明映射，保证设备名、监控点 code 与前端画面标识三处一致。
+CAMERA_NUMBER: dict[int, int] = {2: 1, 1: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7}
+
+#: 主监控画面的机位标识
+PRIMARY_CAMERA = f"Camera {CAMERA_NUMBER[PRIMARY_POINT]:02d}"
 
 
 #: 雷达点位 IP 基址：点位 2（主监控点）对应 192.168.1.198，与原始资料报警记录一致
@@ -140,7 +151,7 @@ def monitor_points() -> list[dict]:
         points.append(
             {
                 "id": f"P{position:02d}",
-                "code": f"Camera {position:02d}",
+                "code": f"Camera {CAMERA_NUMBER[position]:02d}",
                 "name": POINT_LOCATIONS[position],
                 "position": position,
                 "device_id": f"RAD-{position:02d}" if has_radar else f"CAM-{position:02d}",

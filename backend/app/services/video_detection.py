@@ -18,8 +18,8 @@
 
 扩展性
 ------
-按 ``camera_id`` 组织配置。当前只有主监控点（CAM-01）配置了检测框；
-Camera 02~04 只需补充 ``variant`` 与配置项即可，无需改动解析逻辑。
+按 ``camera_id`` 组织配置。当前只有主监控点（Camera 01）配置了检测框；
+Camera 02~04 只需补充配置项即可，无需改动解析逻辑。
 """
 
 from __future__ import annotations
