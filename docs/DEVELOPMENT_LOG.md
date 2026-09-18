@@ -460,4 +460,5 @@
 | **已有站点回归** | fitness(80) → 200；ccqspace.site(443) → 200（服务器侧实测）；8000/18080 项目不受影响 |
 | 服务器侧测试 | 部署后 `pytest` 121 passed（Python 3.10.12 下同样通过） |
 
-**Commit**：`待填`
+**Commit**：`236d6480bd421d2298a72fb98daddc6e8dad08a8`
+（`chore: add production deployment configuration` → 已推送）
