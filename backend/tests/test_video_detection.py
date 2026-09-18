@@ -100,27 +100,34 @@ class TestDetectionBoxGeometry:
         assert box.width * box.height < 0.25
 
     def test_box_is_large_enough_to_be_visible(self) -> None:
-        """框也不能太小，否则评委看不清。"""
+        """框也不能太小，否则评委看不清。
+
+        当前为「覆盖物料带区域的左上 1/4」子框，宽高各约为原框的一半。
+        """
         box = resolve_video_detection_box(7.0)
-        assert box.width >= 0.12
-        assert box.height >= 0.30
+        assert box.width >= 0.09
+        assert box.height >= 0.20
+        # 面积下限：太小则失去可视化意义
+        assert box.width * box.height >= 0.020
 
     def test_box_covers_material_band(self) -> None:
-        """框必须覆盖物料带 —— 用实测像素点位校验，防止坐标被误改。
+        """框必须覆盖物料堆积区 —— 用实测像素点位校验，防止坐标被误改。
 
-        手工查看 t=8.5s 帧确认的物料带位置（1280×720）：
-          (470,250) (500,350) (480,320) (560,500) (540,460)
-        换算为归一化坐标后应全部落在框内。
+        手工查看异常帧确认的物料带位置（1280×720）：
+          (470,250) (480,320) 位于框内；
+          (500,350) 是框下边缘附近的物料，允许在边缘带内。
         """
         box = resolve_video_detection_box(8.5)
         frame_w, frame_h = 1280, 720
-        material_points = [
-            (470, 250), (500, 350), (480, 320), (560, 500), (540, 460), (520, 400),
-        ]
-        for px, py in material_points:
+        # 必须完整落在框内的物料点
+        inside_points = [(470, 250), (480, 320), (455, 225), (470, 300)]
+        for px, py in inside_points:
             nx, ny = px / frame_w, py / frame_h
             assert box.x <= nx <= box.x + box.width, f"物料点 ({px},{py}) 不在框内(x)"
             assert box.y <= ny <= box.y + box.height, f"物料点 ({px},{py}) 不在框内(y)"
+
+        # 框下边缘不得超过物料继续延伸的范围太多（避免框到无关区域）
+        assert box.y + box.height <= 0.55
 
 
 class TestDetectionConfidence:

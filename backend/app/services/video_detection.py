@@ -69,15 +69,16 @@ class DetectionBoxConfig:
 
 #: 主监控点配置。
 #:
-#: 框位置由人工查看 Video.mp4 后确定：物料带沿画面中部由左上向右下延伸，
-#: 该矩形完整覆盖 y≈190~535 这段**逐渐变宽变厚**的堆积区（1280×720 下即
-#: 430,190 → 695,535），且不包含大片空输送带与设备区域。
+#: 框位置由人工查看监控视频后确定：物料带沿画面中部由左上向右下延伸。
+#: 取该区域的**左上 1/4 子区域**作为检测框 —— 这里正是物料开始增厚、
+#: 堆积形态最集中的一段（1280×720 下即 430,190 → 563,363），
+#: 比覆盖整条物料带更聚焦，也不包含大片空输送带与设备区域。
 PRIMARY_DETECTION: DetectionBoxConfig = DetectionBoxConfig(
     camera_id=PRIMARY_CAMERA_ID,
     x=0.3359,
     y=0.2639,
-    width=0.2070,
-    height=0.4792,
+    width=0.1039,
+    height=0.2403,
     label="material_accumulation",
     label_text="物料堆积",
     active_from_risk=STATE_WARNING_RISK,
