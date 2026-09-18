@@ -676,4 +676,5 @@
   已改为 `*.mp4` 通配规则并 `git rm --cached`，仓库与远端现均无任何视频文件；
   源文件在磁盘上保留未动。
 
-**Commit**：`待填`
+**Commit**：`d1b39542846f97345652ac9761ff45b782c6db96`
+（`fix: remove leftover demo wording and tidy deployment docs` → 已推送）
