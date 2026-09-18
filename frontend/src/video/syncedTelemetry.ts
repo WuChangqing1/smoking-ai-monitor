@@ -384,7 +384,7 @@ export function buildSyncedPrediction(
     ],
     suggestions: [
       ...suggestions,
-      '说明：视频同步模式的时间轴经过压缩，用于演示真实系统中可能跨越更长时间发生的趋势；预测表达的是"在当前趋势持续条件下"的风险走向。',
+      '说明：画面同步模式的时间轴经过压缩，用于呈现真实系统中可能跨越更长时间发生的趋势；预测表达的是"在当前趋势持续条件下"的风险走向。',
     ],
     similar_events: similarEvents,
     curve,

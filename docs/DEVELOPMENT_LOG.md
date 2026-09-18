@@ -599,11 +599,12 @@
 | 循环复位 | t=10 alarm → t=0 normal，同 t 数据可复现 |
 | 原能力回归 | automatic 模式、启停控制、报警生成测试全部继续通过 |
 
-**Commit**：`待填`
+**Commit**：`918950f493bff744ff0e79703a6a4a165eb77f8f`
+（`feat: synchronize monitoring telemetry with demo video` → 已推送）
 
 ---
 
-## 轮次 9 — 本地开发环境可用性修复
+## 轮次 10 — 本地开发环境可用性修复
 
 **问题**：用户反馈页面显示「实时数据不可用 / 无法连接后端服务（/api/realtime?points=120）/
 后端服务未连接」。诊断结果：**本机后端（18080）与前端（15173）都没有在运行**，
@@ -639,5 +640,40 @@
 | 本机前端 15173 | 运行中（pid 15404），`/api/realtime`、`/api/system/status` 经代理均 200 |
 | 线上主入口 18082 | 200，数据推进 8.10 s / 8 s，重新部署最新产物 |
 | 前端构建 | `tsc + vite build` 通过（626 模块，无警告） |
+
+**Commit**：`cd706f6daaa952fc10e581462e2a0c90a38ecafb`
+（`fix: make local startup reliable and error messages actionable` → 已推送）
+
+---
+
+## 轮次 11 — 视频同步版本部署与文案收尾
+
+**部署结果（公网实测）**
+
+| 检查项 | 主入口 `:18082` | 备用入口 `/smoking/` |
+|---|---|---|
+| 首页 | 200 | 200 |
+| `/videos/main-monitor.mp4` | 200（`video/mp4`，2319296 字节） | 200 |
+| 数据接口（health/status/realtime/alarms/knowledge/prediction） | 全部 200 | — |
+| `/api/video-sync/info`、`/api/video-sync/telemetry` | 200 | 200 |
+| 已有站点 fitness(80) | 200（不受影响） | — |
+
+视频 SHA256 与源文件一致：`2ee747215adb4beff99f1368e2425c2f0efe518659a82cbf292fb10f392ebbb7`
+
+**循环不写库验证**：连续观察 88 秒（≈4.4 个视频循环周期），
+报警总数稳定为 **6 条**、知识库稳定为 **12 条**，未发生增长。
+
+**文案收尾**：产物中 `演示` 还剩 4 处（如"主监控点演示视频的源时长"），
+已改为"监控视频 / 展示周期"等中性表述。现在产物中
+`仿真` / `演示` / `v0.1.0` 均为 **0 处**。
+
+**修正的真实缺陷**
+
+- `.gitignore` 此前被 `Add-Content` 以 GBK 写入了中文注释，
+  导致该文件不是合法 UTF-8（read 工具直接报错）。已整体重写为干净的 UTF-8。
+- 视频忽略规则原先只覆盖 `frontend/public/videos/*.mp4`，
+  根目录的 `Video.mp4` 因此被误提交（2.21 MB）。
+  已改为 `*.mp4` 通配规则并 `git rm --cached`，仓库与远端现均无任何视频文件；
+  源文件在磁盘上保留未动。
 
 **Commit**：`待填`

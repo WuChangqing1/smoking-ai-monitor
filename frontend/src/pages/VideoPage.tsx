@@ -126,13 +126,13 @@ export default function VideoPage({
                 label="源片时长"
                 value={videoDuration.toFixed(0)}
                 unit="s"
-                hint="主监控点演示视频的源时长"
+                hint="主监控点监控视频的源时长"
               />
               <MetricRow
                 label="播放速率"
                 value={`${playbackRate}×`}
                 tone="info"
-                hint={`约 ${(videoDuration / playbackRate).toFixed(0)} 秒完成一个演示周期（浏览器侧调速，不重新编码）`}
+                hint={`约 ${(videoDuration / playbackRate).toFixed(0)} 秒完成一个展示周期（浏览器侧调速，不重新编码）`}
               />
             </MetricList>
           </Panel>
