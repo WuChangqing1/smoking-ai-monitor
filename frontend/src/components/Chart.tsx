@@ -91,7 +91,7 @@ export default function Chart({
     <div className={`chart ${className}`.trim()} style={{ height }}>
       {isEmpty ? (
         <div className="chart__empty">
-          <EmptyState title={emptyText} description="等待后端实时数据接入后自动绘制。" />
+          <EmptyState title={emptyText} description="采集数据恢复后自动更新。" />
         </div>
       ) : (
         <div ref={hostRef} className="chart__canvas" />

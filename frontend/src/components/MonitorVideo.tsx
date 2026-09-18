@@ -218,10 +218,7 @@ export default function MonitorVideo({
         <div className="monitor-video__placeholder">
           <span className="monitor-video__placeholder-mark" aria-hidden="true" />
           <p className="monitor-video__placeholder-title">{placeholderText}</p>
-          <p className="monitor-video__placeholder-desc">
-            监控视频接入后，将文件放置为
-            <code>public/videos/main-monitor.mp4</code> 即可自动显示。
-          </p>
+          <p className="monitor-video__placeholder-desc">视频信号恢复后自动显示画面</p>
         </div>
       )}
 

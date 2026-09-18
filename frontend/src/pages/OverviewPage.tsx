@@ -261,11 +261,8 @@ export default function OverviewPage({
             ) : (
               <EmptyState
                 tone={statusError ? 'critical' : 'idle'}
-                title={statusError ? '后端服务未连接' : '正在获取系统状态'}
-                description={
-                  statusError ??
-                  '系统运行状态由后端 /api/system/status 提供，启动后端后自动刷新。'
-                }
+                title={statusError ? '系统状态获取失败' : '正在获取系统状态'}
+                description={statusError ?? '监控服务恢复后自动刷新。'}
               />
             )}
           </Panel>

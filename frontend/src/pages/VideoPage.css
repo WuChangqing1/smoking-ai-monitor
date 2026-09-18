@@ -27,22 +27,6 @@
   min-width: 0;
 }
 
-.video-page__note {
-  font-size: var(--fs-base);
-  color: var(--c-text-sub);
-  line-height: 1.85;
-}
-
-.video-page__note + .video-page__note {
-  margin-top: var(--sp-3);
-  padding-top: var(--sp-3);
-  border-top: 1px dashed var(--c-border);
-}
-
-.video-page__note strong {
-  color: var(--c-text);
-}
-
 /* ---- 多监控点缩略卡 ---- */
 .video-page__grid {
   min-width: 0;

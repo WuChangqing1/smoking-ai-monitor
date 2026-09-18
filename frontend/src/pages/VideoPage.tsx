@@ -122,19 +122,6 @@ export default function VideoPage({ meta }: VideoPageProps) {
               />
             </MetricList>
           </Panel>
-
-          <Panel title="画面说明" icon={<IconVideo size={14} />}>
-            <p className="video-page__note">
-              原系统具备摄像头多点监控能力（点位 1~7）。当前
-              <strong> Camera 01 </strong>
-              已接入现场画面，其余监控点待接入完成后陆续开放，未接入前显示为待切换状态。
-            </p>
-            <p className="video-page__note">
-              监控视频接入后，只需将文件放置为
-              <code>public/videos/main-monitor.mp4</code>，全部监控点区域自动切换为视频播放，
-              <strong>无需修改业务代码</strong>。
-            </p>
-          </Panel>
         </div>
       </div>
 
