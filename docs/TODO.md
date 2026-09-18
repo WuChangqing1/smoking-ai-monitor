@@ -126,13 +126,28 @@
 - [x] `deployment/README.md` + README 第 8 节按实测重写
 - [x] 服务器侧 `pytest` 121 passed（Python 3.10.12）
 
-**线上地址：http://110.42.236.65/smoking/**
+**线上地址（双入口，均可用）**
+
+- 主入口：**http://110.42.236.65:18082/**（独立端口，与已有项目完全隔离）
+- 备用入口：http://110.42.236.65/smoking/（复用 80 端口，路径式）
+
+## 轮次 8：独立端口入口启用（Commit 12）
+
+- [x] 确认安全组放通 18082（18081 保持不对公网，后端只走回环）
+- [x] 主入口 `/etc/nginx/conf.d/smoking-monitor.conf` 生效
+- [x] 保留路径式 `/smoking/` 作为备用入口
+- [x] 双入口 + 后端隔离 + 已有站点回归 三段式验证通过
+- [x] 修正 `monitor_point.stream` 绝对路径 → 相对路径
+- [x] 新增 `scripts/verify-deployment.sh` 一键复验
 
 ## 待办（后续可选）
 
-- [ ] 最终监控视频到位后放入 `frontend/public/videos/main-monitor.mp4` 并重新部署
-- [ ] 如需独立端口：云控制台放通 18082 后安装已就绪的 `deployment/nginx/smoking-monitor.conf`
-- [ ] 如需域名访问：添加 DNS A 记录（大陆服务器 80/443 需域名已备案）
+- [ ] **最终监控视频**：到位后重命名为 `main-monitor.mp4`，
+      本地 `npm run build` 后上传 `dist/videos/main-monitor.mp4` 即可自动生效
+      （前端已用 HEAD 探测 + onError 双层回退，当前实测正确回退到静态监控图）
+- [ ] 可选：把真实数据源接入（`SMOKING_SIMULATION=0` + 实现数据源适配器，见 README 第 11 节）
+- [ ] 可选：如需域名访问，添加 DNS A 记录（大陆服务器 80/443 需域名已备案）
+- [ ] 可选：下线备用入口 `bash scripts/remote-ops.sh rollback`（主入口不受影响）
 
 ## 待确认 / 风险
 

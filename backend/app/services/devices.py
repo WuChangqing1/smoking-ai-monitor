@@ -149,8 +149,10 @@ def monitor_points() -> list[dict]:
                 else f"192.168.1.{201 + position}",
                 "has_radar": has_radar,
                 "online": True,
-                # 仅主监控点有画面；其余返回 None，前端显示"待切换"占位
-                "stream": "/videos/main-monitor.mp4" if position == PRIMARY_POINT else None,
+                # 仅主监控点有画面；其余返回 None，前端显示"待切换"占位。
+                # 用相对路径：平台既可挂在根路径也可挂在子路径（如 /smoking/），
+                # 与前端 MonitorVideo 的固定替换约定保持一致。
+                "stream": "videos/main-monitor.mp4" if position == PRIMARY_POINT else None,
             }
         )
     return points

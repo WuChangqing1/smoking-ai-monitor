@@ -295,7 +295,9 @@ Git LFS / 部署时单独上传 / 保持忽略。任一种都**不改变**上述
 
 ## 8. Linux 部署
 
-> **已实际部署完成。** 线上地址：**http://110.42.236.65/smoking/**
+> **已实际部署完成。**
+> **主入口（推荐）：http://110.42.236.65:18082/**
+> 备用入口：http://110.42.236.65/smoking/
 > 完整的部署记录、运维命令与回滚方式见 **`deployment/README.md`**。
 
 前置原则：**不覆盖服务器已有项目，不 kill 不认识的进程，不动已有 Nginx 配置。**
@@ -336,32 +338,38 @@ scp scripts/recon.sh <host>:/tmp/ && ssh <host> "bash /tmp/recon.sh"
 ### 8.3 最终部署结构
 
 ```
-http://110.42.236.65/smoking/          ← 平台入口（复用已放通的 80 端口）
-        ├── /smoking/          → /var/www/smoking-monitor/dist/   前端静态文件
-        ├── /smoking/assets/   → dist/assets/                     长缓存
-        ├── /smoking/images/   → dist/images/                     静态监控图
-        ├── /smoking/videos/   → dist/videos/                     监控视频（缺失自动回退）
-        └── /smoking/api/      → http://127.0.0.1:18081/api/      FastAPI 反代
+http://110.42.236.65:18082/            ← 主入口（Nginx 独立 server 块，与已有项目完全隔离）
+        ├── /            → /var/www/smoking-monitor/dist/   前端静态文件（SPA 回退）
+        ├── /assets/     → dist/assets/                     长缓存
+        ├── /images/     → dist/images/                     静态监控图
+        ├── /videos/     → dist/videos/                     监控视频（缺失自动回退）
+        └── /api/        → http://127.0.0.1:18081/api/      FastAPI 反代
+
+http://110.42.236.65/smoking/          ← 备用入口（复用已放通的 80 端口，路径式）
+        └── 同上，仅 URL 前缀不同，共用同一份 dist 与同一个后端
 
 /home/ubuntu/apps/smoking-monitor/
 ├── backend/   后端代码      ├── venv/   Python 虚拟环境      └── data/  SQLite
 ```
 
-后端 uvicorn 只监听 `127.0.0.1:18081`，**不直接对外暴露**。
+后端 uvicorn 只监听 `127.0.0.1:18081`，**不直接对外暴露** ——
+实测 18081 从公网不可达，Nginx 是唯一对外通道。
 
 `frontend/vite.config.ts` 设置 `base: './'`，构建产物使用相对路径引用资源，
-因此**同一份产物既能挂在根路径也能挂在子路径**，换部署位置无需重新构建。
+因此**同一份产物既能挂在根路径（18082）也能挂在子路径（`/smoking/`）**，
+两种入口共用，换部署位置无需重新构建。
 
-### 8.4 涉及的系统改动（全部可一行回滚）
+### 8.4 涉及的系统改动（全部可回滚）
 
 | 文件 | 动作 |
 |---|---|
-| `/etc/nginx/snippets/smoking-monitor-locations.conf` | 新增 |
+| `/etc/nginx/conf.d/smoking-monitor.conf` | 新增（主入口，监听 18082） |
+| `/etc/nginx/snippets/smoking-monitor-locations.conf` | 新增（备用入口片段） |
 | `/etc/nginx/sites-available/fitness` | **追加 1 行 include**（其余指令未动） |
 | `/etc/systemd/system/smoking-monitor-api.service` | 新增 |
 
 > 没有修改任何已有 server 块的其他指令，没有删除任何文件，
-> 没有终止任何不认识的进程。
+> 没有终止任何不认识的进程。一键下线备用入口：`bash scripts/remote-ops.sh rollback`。
 
 ### 8.5 后端常驻与异常重启
 
@@ -397,34 +405,40 @@ sudo journalctl -u smoking-monitor-api -f
 sudo systemctl restart smoking-monitor-api
 ```
 
-### 8.8 如需改为独立端口
+### 8.8 端口说明
 
-若后续在云控制台放通 18082，直接安装已就绪的
-`deployment/nginx/smoking-monitor.conf` 即可获得完全独立的入口，
-无需改动本平台的任何代码：
+| 端口 | 用途 | 对外 | 说明 |
+|---|---|---|---|
+| 18082 | **Nginx 主入口** | 已放通 | 独立 server 块，推荐使用 |
+| 80 | Nginx 备用入口（`/smoking/`） | 已放通 | 与 fitness 共用 server 块 |
+| 18081 | 后端 uvicorn | **不应对外** | 只监听 127.0.0.1，由 Nginx 反代 |
+| 443 / 18080 | 其他项目 | 已放通 | 未做任何改动 |
 
-```bash
-sudo cp deployment/nginx/smoking-monitor.conf /etc/nginx/conf.d/
-sudo nginx -t && sudo systemctl reload nginx
-```
+> **18081 无需对外开放**。后端只应经 Nginx 访问；直接暴露会绕过统一入口。
+> 如果安全组放通了它，建议收回。`scripts/verify-deployment.sh` 中有一项专门
+> 校验"18081 从公网应不可达"。
 
 ### 8.9 部署验证结果（实测）
 
 | 检查项 | 结果 |
 |---|---|
-| 平台首页 | `http://110.42.236.65/smoking/` → **200** |
-| 静态资源与相对路径解析 | 全部 **200**，`./assets/...` 正确解析到 `/smoking/assets/...` |
-| 8 个数据接口 | health / system-status / realtime / alarms / alarms-options / prediction / knowledge / monitor-points → 全部 **200** |
-| 实时仿真数据 | state=normal、risk=23.6%、测距 0.721 m、10 Hz 采集、历史 120 点 |
+| **主入口首页** | `http://110.42.236.65:18082/` → **200** |
+| **主入口 9 个接口** | 全部 **200** |
+| 主入口静态资源与相对路径解析 | 全部 **200** |
+| 备用入口 | `/smoking/` 及接口 → 全部 **200** |
+| **后端隔离** | 18081 公网**不可达**（正确）；回环 200 |
+| 实时仿真数据 | 测距 0.721 m、10 Hz 采集、历史 120 点 |
 | 设备 / 报警 / 知识库 | 在线设备 18/18；报警 6 条覆盖 4 种异常类型；知识库 12 条 |
-| 控制接口 | 演示场景切换与恢复 → `ok=true`，风险随之变化 |
+| 控制接口 | 场景切换与恢复 → `ok=true`，风险随之变化 |
 | 进程与自启 | `active` + `enabled` |
-| **已有站点回归** | fitness(80) → 200；ccqspace.site(443) → 200（服务器侧）；其他项目不受影响 |
+| **已有站点回归** | fitness(80) → 200；ccqspace.site(443) → 200；其他项目不受影响 |
+
+一键复验：`bash scripts/verify-deployment.sh`
 
 ### 8.10 域名访问（可选）
 
 腾讯云中国大陆服务器的 80/443 对外服务需要域名已备案，**直接用 IP 访问不受此限制**。
-当前用 IP + 路径访问已满足"评委直接打开即可查看"的要求；
+当前用 IP 访问已满足"评委直接打开即可查看"的要求；
 如需域名访问，添加 DNS A 记录后在 443 的 server 块复用同一 location 片段即可。
 
 ---

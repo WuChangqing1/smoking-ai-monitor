@@ -6,9 +6,14 @@
 
 | 入口 | 地址 | 说明 |
 |---|---|---|
-| **平台首页** | **http://110.42.236.65/smoking/** | 评委直接打开这个地址 |
-| 接口健康检查 | http://110.42.236.65/smoking/api/health | |
-| 接口文档 | http://110.42.236.65/smoking/api/docs | FastAPI 自动文档 |
+| **主入口（推荐）** | **http://110.42.236.65:18082/** | 独立端口，与服务器上其他项目完全隔离 |
+| 备用入口 | http://110.42.236.65/smoking/ | 路径式，复用 80 端口 |
+| 接口健康检查 | http://110.42.236.65:18082/api/health | |
+| 接口文档 | http://110.42.236.65:18082/api/docs | FastAPI 自动文档 |
+
+> 两个入口指向同一份构建产物与同一个后端，可同时使用。
+> 主入口是独立端口，不依赖任何其他站点的配置，**建议评委/演示时使用主入口**；
+> 备用入口的价值在于：万一以后 18082 被回收或调整，80 端口这条路依然通。
 
 ---
 
@@ -56,22 +61,50 @@
 
 ## 二、最终部署形态
 
-由于"80 端口被占用 + 无法新开端口 + 同端口不能再用第二个 server_name 命中"，
-采用与服务器上**既有做法一致**的路径前缀方式接入：
+### 2.1 主入口：独立端口 18082
+
+安全组放通后启用，与服务器上其他项目**完全隔离**：
 
 ```
-http://110.42.236.65/smoking/          ← 平台入口
+http://110.42.236.65:18082/            ← 主入口（Nginx 独立 server 块）
         │
-        ├── /smoking/            → /var/www/smoking-monitor/dist/   （前端静态文件，SPA 回退）
-        ├── /smoking/assets/     → dist/assets/                      （长缓存）
-        ├── /smoking/images/     → dist/images/                      （静态监控图）
-        ├── /smoking/videos/     → dist/videos/                      （监控视频，缺失时前端自动回退图片）
-        └── /smoking/api/        → http://127.0.0.1:18081/api/       （FastAPI 反向代理）
+        ├── /            → /var/www/smoking-monitor/dist/   （前端静态文件，SPA 回退）
+        ├── /assets/     → dist/assets/                      （长缓存）
+        ├── /images/     → dist/images/                      （静态监控图）
+        ├── /videos/     → dist/videos/                      （监控视频，缺失时前端自动回退图片）
+        └── /api/        → http://127.0.0.1:18081/api/       （FastAPI 反向代理）
 ```
 
-后端 uvicorn 只监听 `127.0.0.1:18081`，**不直接对外暴露**。
+配置文件：`/etc/nginx/conf.d/smoking-monitor.conf`（独立文件，不与其他站点共享）
 
-### 前端 `base` 配置（重要）
+### 2.2 备用入口：路径式 /smoking/（复用 80 端口）
+
+**为什么当初需要它**：部署时云安全组只放通了 22/80/443，
+实测（在服务器上访问自身公网 IP）18080/18081/18082/8080 等端口一律超时，
+而 80 端口已被 fitness 站点占用（`server_name 110.42.236.65`）、
+443 被 ccqspace.site 占用，且**同一端口无法再用第二个 server_name 命中**。
+
+于是采用与服务器上既有做法（`/market/`、`/home/`）一致的路径前缀方式接入：
+
+```
+http://110.42.236.65/smoking/          ← 备用入口
+        ├── /smoking/          → /var/www/smoking-monitor/dist/
+        ├── /smoking/assets/   → dist/assets/
+        ├── /smoking/images/   → dist/images/
+        ├── /smoking/videos/   → dist/videos/
+        └── /smoking/api/      → http://127.0.0.1:18081/api/
+```
+
+实现方式：在 `sites-available/fitness` 的 server 块中**追加 1 行 include**，
+引入 `deployment/nginx/smoking-monitor-locations.conf`（一行即可回滚）。
+
+### 2.3 后端（两种入口共用）
+
+后端 uvicorn 只监听 `127.0.0.1:18081`，**不直接对外暴露** ——
+实测 `http://110.42.236.65:18081/api/health` 不可达（正确），
+本机回环访问 200。Nginx 是两个入口唯一的对外通道。
+
+### 2.4 前端 `base` 配置（重要）
 
 `frontend/vite.config.ts` 中设置 `base: './'`，构建产物使用相对路径引用资源：
 
@@ -79,8 +112,8 @@ http://110.42.236.65/smoking/          ← 平台入口
 <script src="./assets/index-xxx.js"></script>
 ```
 
-这样同一份构建产物**既能挂在根路径、也能挂在 `/smoking/` 等子路径**，
-换部署位置不需要重新构建。
+这样同一份构建产物**既能挂在根路径（18082）、也能挂在 /smoking/ 子路径**，
+两种入口共用同一份 dist，不需要为部署位置重新构建。
 
 ---
 
@@ -107,13 +140,14 @@ http://110.42.236.65/smoking/          ← 平台入口
 
 | 文件 | 动作 | 回滚方式 |
 |---|---|---|
-| `/etc/nginx/snippets/smoking-monitor-locations.conf` | **新增** | 删除该文件 |
+| `/etc/nginx/conf.d/smoking-monitor.conf` | **新增**（主入口，监听 18082） | 删除该文件并 reload |
+| `/etc/nginx/snippets/smoking-monitor-locations.conf` | **新增**（备用入口片段） | 删除该文件 |
 | `/etc/nginx/sites-available/fitness` | **追加 1 行 include** | 删除该行并 `nginx -t && systemctl reload nginx` |
 | `/etc/systemd/system/smoking-monitor-api.service` | **新增** | `systemctl disable --now smoking-monitor-api && rm` |
-| `/etc/nginx/conf.d/smoking-monitor.conf` | 新增（监听 18082，安全组放通后启用） | 删除该文件 |
 
 > **没有修改任何已有 server 块的其他指令，没有删除任何文件，没有终止任何不认识的进程。**
-> 所有改动集中在一个 include 行与两个新增文件上。
+> 所有改动集中在两个新增 conf 文件、一行 include 与一个 service 文件上。
+> 一键回滚备用入口：`bash scripts/remote-ops.sh rollback`
 
 ---
 
@@ -164,42 +198,50 @@ curl -s http://127.0.0.1/smoking/api/health
 
 ---
 
-## 七、如何改成独立端口（如果后续放通安全组）
+## 七、双入口与端口说明
 
-如果希望在云控制台放通一个独立端口（例如 18082），让平台拥有完全独立的入口：
+| 端口 | 用途 | 对外 | 说明 |
+|---|---|---|---|
+| 18082 | **Nginx 主入口** | 已放通 | 独立 server 块，推荐使用 |
+| 80 | Nginx 备用入口（`/smoking/`） | 已放通 | 与 fitness 共用 server 块 |
+| 18081 | 后端 uvicorn | **不应对外** | 只监听 127.0.0.1，Nginx 反代 |
+| 443 | ccqspace.site | 已放通 | 其他项目，未改动 |
+| 18080 | LLM API Platform | 其他项目 | 未改动 |
 
-1. 在**腾讯云控制台 → 安全组**中放通 TCP `18082` 入站；
-2. 服务器上执行：
+> **18081 不需要对外开放。** 安全组若放通了它，建议收回 ——
+> 后端只应通过 Nginx 访问，直接暴露会绕过统一入口。
+> `scripts/verify-deployment.sh` 中有一项专门检查"18081 对外应不可达"。
+
+### 如需下线备用入口
+
+保留主入口即可，备用入口不是必需的：
 
 ```bash
-sudo cp deployment/nginx/smoking-monitor.conf /etc/nginx/conf.d/smoking-monitor.conf
-sudo nginx -t && sudo systemctl reload nginx
+bash scripts/remote-ops.sh rollback     # 移除 fitness 中的 include 行与该片段文件
 ```
 
-3. 之后即可通过 `http://110.42.236.65:18082/` 访问；
-4. 如需下线路径式入口，删除 `fitness` 中的那一行 include 并 reload 即可。
-
-`deployment/nginx/smoking-monitor.conf` 已经就绪（监听 18082、反代 127.0.0.1:18081），
-不需要任何改动。
+主入口（18082）不受影响。
 
 ---
 
 ## 八、部署验证结果（实测）
 
-部署后逐项验证：
-
 | 检查项 | 结果 |
 |---|---|
-| 平台首页 | `http://110.42.236.65/smoking/` → **200**，标题正确 |
-| 静态资源 | index.html / favicon.svg / fallback 图 / assets JS → 全部 **200** |
-| 相对路径解析 | `./assets/...` 正确解析为 `/smoking/assets/...` |
-| 8 个数据接口 | health / system-status / realtime / alarms / alarms-options / prediction / knowledge / monitor-points → 全部 **200** |
-| 实时数据 | 仿真正常：state=normal、risk=23.6%、测距 0.721 m、10 Hz、历史 120 点 |
+| **主入口首页** | `http://110.42.236.65:18082/` → **200**，标题正确 |
+| **主入口 9 个接口** | health / system-status / realtime / devices / alarms / alarms-options / prediction / knowledge / monitor-points → 全部 **200** |
+| 主入口静态资源 | favicon.svg / fallback 图 / assets JS → 全部 **200** |
+| 备用入口 | `/smoking/`、`/smoking/api/health`、`/smoking/api/realtime` → 全部 **200** |
+| 相对路径解析 | `./assets/...` 在两种入口下均正确解析 |
+| **后端隔离** | 18081 对外**不可达**（正确）；本机回环 200 |
+| 实时数据 | 仿真正常：测距 0.721 m、10 Hz 采集、历史 120 点 |
 | 设备与报警 | 在线设备 18/18；报警 6 条，覆盖 4 种异常类型 |
 | 知识库 | 12 条经验记录 |
-| 控制接口 | 演示场景切换 / 恢复自动循环 → 均 `ok=true`，风险随之变化（预警场景实测 63.5%） |
+| 控制接口 | 演示场景切换 / 恢复自动循环 → 均 `ok=true`，风险随之变化 |
 | 进程与自启 | `systemctl is-active` → active；`is-enabled` → enabled |
-| **已有站点回归** | fitness(80) → **200**；ccqspace.site(443) → **200**（服务器侧实测）；其他项目 8000/18080 不受影响 |
+| **已有站点回归** | fitness(80) → **200**；ccqspace.site(443) → **200**；其他项目 8000/18080 不受影响 |
+
+一键复验：`bash scripts/verify-deployment.sh`
 
 ---
 

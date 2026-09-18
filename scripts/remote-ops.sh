@@ -3,15 +3,16 @@
 #  烟厂制丝线物流智能监控平台 —— 服务器运维脚本
 #
 #  目标服务器：ssh fengz (ubuntu@110.42.236.65, Ubuntu 22.04)
-#  线上地址  ：http://110.42.236.65/smoking/
+#  主入口    ：http://110.42.236.65:18082/
+#  备用入口  ：http://110.42.236.65/smoking/
 #
 #  用法（在本地仓库根目录执行，脚本会自动 scp 到服务器再运行）：
-#      bash scripts/remote-ops.sh status      查看服务与线上探活
+#      bash scripts/remote-ops.sh status      查看服务与两个入口的探活
 #      bash scripts/remote-ops.sh verify      完整验证（含已有站点回归）
 #      bash scripts/remote-ops.sh ports       查看端口占用与安全组放通情况
 #      bash scripts/remote-ops.sh logs        查看后端最近日志
 #      bash scripts/remote-ops.sh restart     重启后端服务
-#      bash scripts/remote-ops.sh rollback    移除路径式入口（回滚 nginx 改动）
+#      bash scripts/remote-ops.sh rollback    移除备用入口（路径式），主入口不受影响
 #
 #  也可以把本文件传到服务器后直接运行同名子命令。
 # ============================================================================
@@ -25,9 +26,10 @@ SERVICE=smoking-monitor-api
 SNIPPET=/etc/nginx/snippets/smoking-monitor-locations.conf
 FITNESS_CONF=/etc/nginx/sites-available/fitness
 PUBLIC_HOST=110.42.236.65
-PUBLIC_URL="http://${PUBLIC_HOST}/smoking"
+MAIN_URL="http://${PUBLIC_HOST}:18082"
+ALT_URL="http://${PUBLIC_HOST}/smoking"
 
-# 本平台挂在 80 端口的某个 server 块上（server_name 110.42.236.65）。
+# 备用入口挂在 80 端口的某个 server 块上（server_name 110.42.236.65）。
 # 直接 curl http://127.0.0.1/smoking/ 不带 Host 头会落到默认 server 而 404，
 # 因此本机探活一律显式带上 Host 头，模拟真实外部请求。
 local_curl() {
@@ -49,54 +51,61 @@ cmd_status() {
   printf '  %-46s %s\n' "http://127.0.0.1:18081/api/health" \
     "$(curl -s -o /dev/null -w '%{http_code}' --max-time 6 http://127.0.0.1:18081/api/health)"
 
-  section "Nginx 路径式入口（本机，带 Host 头）"
-  for u in /smoking/ /smoking/api/health /smoking/api/realtime; do
+  section "主入口（独立端口 18082，本机）"
+  for u in / /api/health /api/realtime; do
+    printf '  %-46s %s\n' "http://127.0.0.1:18082${u}" \
+      "$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "http://127.0.0.1:18082${u}")"
+  done
+
+  section "备用入口（路径式 /smoking/，本机带 Host 头）"
+  for u in /smoking/ /smoking/api/health; do
     printf '  %-46s %s\n' "http://127.0.0.1${u}" "$(local_curl "$u")"
   done
 
-  section "实时数据抽样"
-  curl -s --max-time 8 -H "Host: ${PUBLIC_HOST}" http://127.0.0.1/smoking/api/system/status | head -c 300
+  section "实时数据抽样（主入口）"
+  curl -s --max-time 8 http://127.0.0.1:18082/api/system/status | head -c 300
   echo
 }
 
 # ---------------------------------------------------------------------------
 cmd_verify() {
-  section "1. 首页与静态资源"
-  for p in / /index.html /favicon.svg /images/main-monitor-fallback.png; do
-    printf '  %-42s %s\n' "${PUBLIC_URL}${p}" \
-      "$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${PUBLIC_URL}${p}")"
+  section "1. 主入口（独立端口 18082）"
+  for p in / /favicon.svg /images/main-monitor-fallback.png; do
+    printf '  %-50s %s\n' "${MAIN_URL}${p}" \
+      "$(curl -s -o /dev/null -w '%{http_code}' --max-time 12 "${MAIN_URL}${p}")"
   done
-
-  section "2. 相对路径资源解析"
   local asset
-  asset=$(curl -s --max-time 10 "${PUBLIC_URL}/" | grep -oE 'assets/[^"]+\.js' | head -1)
-  if [ -n "$asset" ]; then
-    printf '  %-42s %s\n' "${PUBLIC_URL}/${asset}" \
-      "$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "${PUBLIC_URL}/${asset}")"
-  else
-    echo "  未在 index.html 中找到 assets 引用"
-  fi
+  asset=$(curl -s --max-time 12 "${MAIN_URL}/" | grep -oE 'assets/[^"]+\.js' | head -1)
+  [ -n "$asset" ] && printf '  %-50s %s\n' "${MAIN_URL}/${asset}" \
+    "$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "${MAIN_URL}/${asset}")"
 
-  section "3. 数据接口"
+  section "2. 主入口数据接口"
   for ep in /api/health /api/system/status /api/realtime /api/devices /api/alarms \
             /api/alarms/options /api/prediction /api/knowledge /api/monitor-points; do
     printf '  %-28s %s\n' "$ep" \
-      "$(curl -s -o /dev/null -w '%{http_code}' --max-time 12 "${PUBLIC_URL}${ep}")"
+      "$(curl -s -o /dev/null -w '%{http_code}' --max-time 12 "${MAIN_URL}${ep}")"
   done
 
-  section "4. 兼容两种入口（路径式 / 独立端口）"
-  printf '  %-42s %s\n' "路径式 /smoking/api/health" "$(local_curl /smoking/api/health)"
-  printf '  %-42s %s\n' "独立端口 18082/api/health" \
-    "$(curl -s -o /dev/null -w '%{http_code}' --max-time 6 http://127.0.0.1:18082/api/health 2>/dev/null || echo '未启用')"
+  section "3. 备用入口（路径式 /smoking/）"
+  for p in / /api/health /api/realtime; do
+    printf '  %-50s %s\n' "${ALT_URL}${p}" \
+      "$(curl -s -o /dev/null -w '%{http_code}' --max-time 12 "${ALT_URL}${p}")"
+  done
+
+  section "4. 后端隔离（18081 不应对外可达）"
+  printf '  %-50s %s\n' "公网 18081（期望不可达）" \
+    "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://${PUBLIC_HOST}:18081/api/health" 2>/dev/null || echo '不可达(正确)')"
+  printf '  %-50s %s\n' "回环 18081（期望 200）" \
+    "$(curl -s -o /dev/null -w '%{http_code}' --max-time 6 http://127.0.0.1:18081/api/health)"
 
   section "5. 已有站点回归检查（必须不受影响）"
-  printf '  %-42s %s\n' "fitness http://127.0.0.1/ (Host: IP)" \
-    "$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://127.0.0.1/ -H "Host: ${PUBLIC_HOST}")"
-  printf '  %-42s %s\n' "ccqspace.site https (Host 头)" \
+  printf '  %-50s %s\n' "fitness http://127.0.0.1/ (Host: IP)" \
+    "$(local_curl /)"
+  printf '  %-50s %s\n' "ccqspace.site https (Host 头)" \
     "$(curl -s -o /dev/null -w '%{http_code}' -k --max-time 8 https://127.0.0.1/ -H 'Host: ccqspace.site')"
-  printf '  %-42s %s\n' "其他项目 8000" \
+  printf '  %-50s %s\n' "其他项目 8000" \
     "$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://127.0.0.1:8000/ 2>/dev/null || echo 'n/a')"
-  printf '  %-42s %s\n' "其他项目 18080（LLM API）" \
+  printf '  %-50s %s\n' "其他项目 18080（LLM API）" \
     "$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://127.0.0.1:18080/ 2>/dev/null || echo 'n/a')"
 }
 
@@ -135,7 +144,9 @@ cmd_restart() {
 }
 # ---------------------------------------------------------------------------
 cmd_rollback() {
-  section "回滚路径式入口"
+  section "移除备用入口（路径式 /smoking/）"
+  echo "  注意：主入口 http://${PUBLIC_HOST}:18082/ 不受影响"
+  echo
   if sudo -n grep -q 'smoking-monitor-locations.conf' "$FITNESS_CONF"; then
     sudo -n sed -i '\#include /etc/nginx/snippets/smoking-monitor-locations.conf;#d' "$FITNESS_CONF"
     echo "  已从 fitness 移除 include 行"
@@ -149,10 +160,14 @@ cmd_rollback() {
     echo "  nginx reloaded ✓"
   fi
   echo
-  echo "  前端与后端文件仍保留在："
-  echo "    $WWW_DIR/dist"
-  echo "    $APP_DIR"
-  echo "  如需彻底移除后端：sudo systemctl disable --now $SERVICE && sudo rm /etc/systemd/system/$SERVICE.service"
+  printf '  主入口仍然可用：%s\n' \
+    "$(curl -s -o /dev/null -w '%{http_code}' --max-time 6 http://127.0.0.1:18082/)"
+  echo
+  echo "  文件保留在："
+  echo "    $WWW_DIR/dist   （前端）"
+  echo "    $APP_DIR        （后端）"
+  echo "  彻底移除后端：sudo systemctl disable --now $SERVICE && sudo rm /etc/systemd/system/$SERVICE.service"
+  echo "  彻底移除主入口：sudo rm /etc/nginx/conf.d/smoking-monitor.conf && sudo systemctl reload nginx"
 }
 
 # ---------------------------------------------------------------------------
