@@ -512,4 +512,5 @@
 - 主入口：**http://110.42.236.65:18082/**
 - 备用入口：http://110.42.236.65/smoking/
 
-**Commit**：`待填`
+**Commit**：`5a146982f9bfd435f22093414860ceb632a97cd4`
+（`feat: enable dedicated port entry for the platform` → 已推送）
