@@ -24,14 +24,11 @@ import {
   IconVideo,
 } from '../components/icons'
 import type { FusionVerdict, RealtimeSnapshot, RiskLevel } from '../types'
-import { useVideoSync } from '../video/VideoSyncContext'
 import './FusionPage.css'
 
 interface FusionPageProps {
   realtime: RealtimeSnapshot | null
   realtimeError: string | null
-  /** 是否处于视频同步模式 */
-  syncActive?: boolean
 }
 
 /** 联合判断结果 → 展示色调 */
@@ -50,8 +47,7 @@ const LEVEL_TONE: Record<RiskLevel, 'normal' | 'info' | 'warning' | 'critical'> 
   critical: 'critical',
 }
 
-export default function FusionPage({ realtime, realtimeError, syncActive = false }: FusionPageProps) {
-  const sync = useVideoSync()
+export default function FusionPage({ realtime, realtimeError }: FusionPageProps) {
   const samples = realtime?.samples ?? []
   const windowSeconds = (samples.length - 1) * (realtime?.sample_interval_seconds ?? 1)
 
@@ -108,12 +104,6 @@ export default function FusionPage({ realtime, realtimeError, syncActive = false
               showDetection
             />
           </div>
-          {syncActive && sync && (
-            <div className="fusion__sync">
-              画面同步 {sync.currentTime.toFixed(1)}s / {sync.duration.toFixed(0)}s
-              {!sync.playing && sync.ready && ' · 已暂停'}
-            </div>
-          )}
         </Panel>
 
         {/* ---- 中：雷达分析 ---- */}

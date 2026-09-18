@@ -412,11 +412,6 @@ function clamp(value: number, low: number, high: number): number {
   return Math.max(low, Math.min(high, value))
 }
 
-/** 供页面显示"当前为主监控点第 N 轮" */
-export function loopLabel(loopCount: number): string {
-  return `第 ${loopCount + 1} 轮`
-}
-
 export { CONVEYOR_BASE_SPEED, VIDEO_PLAYBACK_RATE }
 
 /** 导出便于测试断言 */

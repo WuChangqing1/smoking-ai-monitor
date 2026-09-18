@@ -28,7 +28,6 @@ import {
   IconVideo,
 } from '../components/icons'
 import type { PageId } from '../app/navigation'
-import { useVideoSync } from '../video/VideoSyncContext'
 import type { Device, RealtimeSnapshot, RiskLevel, SimState, SystemStatus } from '../types'
 import './OverviewPage.css'
 
@@ -89,7 +88,6 @@ export default function OverviewPage({
   onNavigate,
   syncActive = false,
 }: OverviewPageProps) {
-  const sync = useVideoSync()
   // 每秒走动的时钟，仅用于画面时间戳
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -217,25 +215,6 @@ export default function OverviewPage({
               showDetection
             />
           </div>
-
-          {/* 画面进度：让"数值随画面同步"这件事可见（非播放器控件） */}
-          {syncActive && sync && (
-            <div className="overview__progress">
-              <span className="overview__progress-label">
-                画面同步 {sync.currentTime.toFixed(1)}s / {sync.duration.toFixed(0)}s
-                {!sync.playing && sync.ready && ' · 已暂停'}
-                {sync.loopCount > 0 && ` · 第 ${sync.loopCount + 1} 轮`}
-              </span>
-              <span className="overview__progress-track">
-                <span
-                  className="overview__progress-fill"
-                  style={{
-                    width: `${Math.min(100, (sync.currentTime / Math.max(0.1, sync.duration)) * 100)}%`,
-                  }}
-                />
-              </span>
-            </div>
-          )}
 
           {/* 画面下方信息条：只放关键字段 */}
           <div className="overview__video-meta">

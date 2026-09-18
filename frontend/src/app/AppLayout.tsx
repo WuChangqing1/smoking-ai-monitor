@@ -129,18 +129,11 @@ function AppShell({ meta }: { meta: ReturnType<typeof useFetch<PlatformMeta>> })
         syncActive={syncActive}
       />
     ),
-    video: (
-      <VideoPage
-        meta={meta.data}
-        playbackRate={meta.data?.video_playback_rate ?? 0.5}
-        videoDuration={meta.data?.video_duration_seconds ?? 10}
-      />
-    ),
+    video: <VideoPage meta={meta.data} />,
     fusion: (
       <FusionPage
         realtime={effectiveRealtime}
         realtimeError={realtime.error}
-        syncActive={syncActive}
       />
     ),
     alarms: <AlarmsPage />,
@@ -182,11 +175,6 @@ function AppShell({ meta }: { meta: ReturnType<typeof useFetch<PlatformMeta>> })
                 <span className="page__subtitle">{current.subtitle}</span>
               </div>
               <div className="page__head-right">
-                {syncActive && sync && (
-                  <span className="page__mode page__mode--sync">
-                    画面同步 · {sync.currentTime.toFixed(1)}s / {sync.duration.toFixed(0)}s
-                  </span>
-                )}
                 {effectiveStatus && (
                   <span
                     className={`page__mode${

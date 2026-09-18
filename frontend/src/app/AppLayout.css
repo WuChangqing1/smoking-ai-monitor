@@ -108,15 +108,6 @@
   color: var(--c-text-muted);
 }
 
-/* 画面同步指示：蓝灰，说明当前数值随监控画面时间轴同步 */
-.page__mode--sync {
-  border-color: #cfdae4;
-  background: var(--c-info-bg);
-  color: var(--c-info);
-  font-family: var(--font-mono);
-  font-weight: 500;
-}
-
 .page__ts {
   font-family: var(--font-mono);
   font-size: var(--fs-sm);

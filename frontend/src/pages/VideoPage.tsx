@@ -15,10 +15,6 @@ import './VideoPage.css'
 
 interface VideoPageProps {
   meta: PlatformMeta | null
-  /** 主监控视频播放速率（源视频 10 s，0.5× 下演示周期约 20 s） */
-  playbackRate?: number
-  /** 主监控视频源时长（秒） */
-  videoDuration?: number
 }
 
 interface PointSlot {
@@ -76,11 +72,7 @@ const POINTS: PointSlot[] = [
   },
 ]
 
-export default function VideoPage({
-  meta,
-  playbackRate = 0.5,
-  videoDuration = 10,
-}: VideoPageProps) {
+export default function VideoPage({ meta }: VideoPageProps) {
   const main = POINTS[0]
   const timestamp = new Date().toLocaleString('zh-CN', { hour12: false })
 
@@ -121,18 +113,6 @@ export default function VideoPage({
                 value="H.265"
                 tone="info"
                 hint="海康威视 DS-2CD2242CX8-L，400 万像素，25 fps"
-              />
-              <MetricRow
-                label="源片时长"
-                value={videoDuration.toFixed(0)}
-                unit="s"
-                hint="主监控点监控视频的源时长"
-              />
-              <MetricRow
-                label="播放速率"
-                value={`${playbackRate}×`}
-                tone="info"
-                hint={`约 ${(videoDuration / playbackRate).toFixed(0)} 秒完成一个展示周期（浏览器侧调速，不重新编码）`}
               />
             </MetricList>
           </Panel>
