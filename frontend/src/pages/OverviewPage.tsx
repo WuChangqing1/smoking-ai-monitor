@@ -206,7 +206,6 @@ export default function OverviewPage({
         >
           <div className="overview__video-wrap">
             <MonitorVideo
-              cameraLabel={point?.code ?? 'Camera 01'}
               timestamp={now.toLocaleString('zh-CN', { hour12: false })}
               hasStream={Boolean(point?.stream) || point === undefined}
               /* 主监控画面作为全站同步时间源：页面数值随它的 currentTime 变化 */

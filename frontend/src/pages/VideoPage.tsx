@@ -103,7 +103,7 @@ export default function VideoPage({ meta }: VideoPageProps) {
           }
         >
           <div className="video-page__main-wrap">
-            <MonitorVideo cameraLabel={main.camera} timestamp={timestamp} hasStream />
+            <MonitorVideo timestamp={timestamp} hasStream />
           </div>
         </Panel>
 
@@ -150,7 +150,6 @@ export default function VideoPage({ meta }: VideoPageProps) {
           >
             <div className="video-page__thumb">
               <MonitorVideo
-                cameraLabel={slot.camera}
                 showTimestamp={false}
                 hasStream={slot.hasStream}
                 placeholderText={`${slot.camera} 画面待切换`}

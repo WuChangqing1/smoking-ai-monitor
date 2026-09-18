@@ -97,7 +97,6 @@ export default function FusionPage({ realtime, realtimeError }: FusionPageProps)
         >
           <div className="fusion__video">
             <MonitorVideo
-              cameraLabel={realtime.monitor_point.code}
               timestamp={new Date().toLocaleString('zh-CN', { hour12: false })}
               hasStream={Boolean(realtime.monitor_point.stream)}
               /* 复用首页同一个异常检测框：位置/尺寸/标签/置信度完全一致 */

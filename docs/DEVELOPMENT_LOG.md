@@ -1050,4 +1050,43 @@ Range 请求仍正常（实测 `Range: bytes=0-1023` → **206 Partial Content**
 
 **新增**：`scripts/fix-nginx-cache.sh`（幂等，自带备份 + `nginx -t` + reload）。
 
+**Commit**：`2c5cbfe43c66406665b18cd831027f6805fa02a1`
+（`fix: stop browsers from caching the monitor video for a week` → 已推送）
+
+---
+
+## 轮次 18 — 移除监控画面上的机位标识叠加
+
+**背景**：用户指出核心监控画面上叠加的 `Camera 01` 是多余的 ——
+**视频画面本身右下角就带 "Camera 01" 水印**，UI 再叠一层属于重复信息。
+
+**改动**：彻底移除该叠加层，而不是仅对主画面隐藏。
+
+- `MonitorVideo.tsx`：删除 `.monitor-video__camera` 渲染与 `cameraLabel` 属性
+- `MonitorVideo.css`：删除 `.monitor-video__camera` 样式；
+  回退提示 `.monitor-video__notice` 原为避免与该标签重叠而下移 36px，
+  现回归右下角 9px
+- 4 处调用点同步去掉 `cameraLabel`：
+  `OverviewPage`（核心监控画面）、`FusionPage`（雷视联动）、
+  `VideoPage`（主画面 + 多监控点缩略区）
+
+**为什么选择彻底移除而不是只对主画面隐藏**：
+视频监控页每个缩略图上方已有 Panel 标题写着 `Camera 02/03/04`，
+机位信息并未丢失；组件里保留一个全站都不再渲染的"死属性"反而是负担。
+
+**保留**：画面左上角的实时时间戳叠加（这是设备 OSD 之外的信息）、
+YOLO 异常检测框、静态图回退提示均不受影响。
+
+**验证**
+
+| 检查项 | 结果 |
+|---|---|
+| 前端 tsc + vite build | 通过（632 模块，无警告） |
+| 产物复查 | `monitor-video__camera` 与 `cameraLabel` 在 JS 与 CSS 中**均为 0 处** |
+| 保留项复查 | `monitor-video__timestamp`×1、`detection-overlay`×3、视频路径×4 |
+| 视频版本参数 | 产物中为 `videos/main-monitor.mp4?v=2`（缓存修复未受影响） |
+| 资源与接口 | 首页、视频、证据图、`/api/realtime`、检测框接口均 200 |
+| 双入口 | 主入口与 `/smoking/` 均 200 |
+| 已有站点回归 | fitness(80) 200 |
+
 **Commit**：`待填`

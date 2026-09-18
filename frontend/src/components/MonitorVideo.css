@@ -43,9 +43,10 @@
   }
 }
 
-/* ---- 叠加信息：小、半透明、不遮挡主体 ---- */
+/* ---- 叠加信息：小、半透明、不遮挡主体 ----
+   已移除 .monitor-video__camera（机位标识）：视频画面自带 "Camera 01" 水印，
+   UI 再叠一层属于重复信息。 */
 .monitor-video__timestamp,
-.monitor-video__camera,
 .monitor-video__notice {
   position: absolute;
   font-family: var(--font-mono);
@@ -64,16 +65,10 @@
   left: 10px;
 }
 
-.monitor-video__camera {
-  bottom: 9px;
-  right: 10px;
-  font-weight: 600;
-}
-
-/* 回退提示放右下偏上，避免与 camera 标签重叠 */
+/* 回退提示放右下角 */
 .monitor-video__notice {
   right: 10px;
-  bottom: 36px;
+  bottom: 9px;
   background: rgba(217, 119, 6, 0.86);
   font-family: var(--font-sans);
 }

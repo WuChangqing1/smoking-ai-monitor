@@ -45,8 +45,6 @@ export const MONITOR_VIDEO_SRC = `${MONITOR_VIDEO_PATH}?v=${MONITOR_VIDEO_VERSIO
 export const MONITOR_FALLBACK_SRC = 'images/main-monitor-fallback.png'
 
 interface MonitorVideoProps {
-  /** 画面左上角叠加的设备标识，例如 "Camera 01" */
-  cameraLabel?: string
   /** 叠加的时间戳文字（通常由调用方传入当前时间） */
   timestamp?: string
   /** 是否叠加时间戳 */
@@ -67,7 +65,6 @@ interface MonitorVideoProps {
 type Mode = 'probing' | 'video' | 'fallback' | 'none'
 
 export default function MonitorVideo({
-  cameraLabel = 'Camera 01',
   timestamp,
   showTimestamp = true,
   hasStream = true,
@@ -235,12 +232,12 @@ export default function MonitorVideo({
            仅在 warning 及以上阶段渲染；循环回到 normal 时自然消失 */}
       {visible !== 'none' && <DetectionOverlay box={detectionBox} />}
 
-      {/* ---- 轻量叠加信息，不堆遮罩 ---- */}
+      {/* ---- 轻量叠加信息，不堆遮罩 ----
+           不再叠加机位标识文字：监控视频画面里本来就带 "Camera 01" 水印，
+           再叠一层会与之重复（用户明确要求去掉）。 */}
       {showTimestamp && visible !== 'none' && (
         <span className="monitor-video__timestamp">{timestamp ?? '----年--月--日 --:--:--'}</span>
       )}
-
-      {visible !== 'none' && <span className="monitor-video__camera">{cameraLabel}</span>}
 
       {mode === 'fallback' && <span className="monitor-video__notice">静态监控画面</span>}
 
