@@ -41,6 +41,17 @@ export const MONITOR_VIDEO_VERSION = 2
 /** 实际请求地址：带版本参数，避免浏览器复用旧缓存 */
 export const MONITOR_VIDEO_SRC = `${MONITOR_VIDEO_PATH}?v=${MONITOR_VIDEO_VERSION}`
 
+/**
+ * 其余监控点（Camera 02/03/04）的循环画面。
+ *
+ * 当前三个机位共用同一份现场素材，因此指向同一个文件；
+ * 后续某个机位拿到独立素材时，把对应的常量换掉即可，组件无需改动。
+ * 三个机位与主监控点一样按 0.5× 播放。
+ */
+export const CAMERA_VIDEO_PATH = 'videos/camera-02.mp4'
+export const CAMERA_VIDEO_VERSION = 1
+export const CAMERA_VIDEO_SRC = `${CAMERA_VIDEO_PATH}?v=${CAMERA_VIDEO_VERSION}`
+
 /** 静态回退画面（由 检测图片.png 生成） */
 export const MONITOR_FALLBACK_SRC = 'images/main-monitor-fallback.png'
 
@@ -60,6 +71,16 @@ interface MonitorVideoProps {
   asTimeSource?: boolean
   /** 是否叠加 YOLO 风格异常检测框（主监控点使用；其他点位暂无检测配置） */
   showDetection?: boolean
+  /**
+   * 画面视频地址。默认使用主监控点视频；
+   * 其余点位传入各自的循环画面文件即可（见 CAMERA_VIDEO_SRC）。
+   */
+  videoSrc?: string
+  /**
+   * 播放速率。主监控点为 0.5×（配合时间轴压缩演示）；
+   * 其余点位只做画面循环展示，用默认的 1× 即可。
+   */
+  rate?: number
 }
 
 type Mode = 'probing' | 'video' | 'fallback' | 'none'
@@ -73,6 +94,8 @@ export default function MonitorVideo({
   overlay,
   asTimeSource = false,
   showDetection = false,
+  videoSrc = MONITOR_VIDEO_SRC,
+  rate = VIDEO_PLAYBACK_RATE,
 }: MonitorVideoProps) {
   const [mode, setMode] = useState<Mode>(hasStream ? 'probing' : 'none')
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -105,7 +128,7 @@ export default function MonitorVideo({
 
     const probe = async () => {
       try {
-        const resp = await fetch(MONITOR_VIDEO_SRC, { method: 'HEAD' })
+        const resp = await fetch(videoSrc, { method: 'HEAD' })
         if (cancelled) return
 
         const type = resp.headers.get('content-type') ?? ''
@@ -124,7 +147,7 @@ export default function MonitorVideo({
     return () => {
       cancelled = true
     }
-  }, [hasStream, goFallback])
+  }, [hasStream, goFallback, videoSrc])
 
   // 某些浏览器对 autoplay 策略更严格，显式 play() 一次并捕获失败
   useEffect(() => {
@@ -141,7 +164,9 @@ export default function MonitorVideo({
   }, [mode])
 
   /**
-   * 播放速率：0.5×，源视频 10 s → 演示周期约 20 s。
+   * 播放速率。
+   *
+   * 主监控点与其余监控点都是 0.5×（源视频 10 s → 演示周期约 20 s）。
    *
    * 不只在初始化时设置一次 —— 部分浏览器在 load / play / seek 之后会把
    * playbackRate 重置回 1.0，因此在这几个时机都重新应用。
@@ -152,8 +177,8 @@ export default function MonitorVideo({
     if (!el) return
 
     const applyRate = () => {
-      if (el.playbackRate !== VIDEO_PLAYBACK_RATE) {
-        el.playbackRate = VIDEO_PLAYBACK_RATE
+      if (el.playbackRate !== rate) {
+        el.playbackRate = rate
       }
     }
 
@@ -173,7 +198,7 @@ export default function MonitorVideo({
       el.removeEventListener('playing', applyRate)
       el.removeEventListener('seeked', applyRate)
     }
-  }, [mode])
+  }, [mode, rate])
 
   // 把主监控视频注册为全站同步时间源
   useEffect(() => {
@@ -191,7 +216,7 @@ export default function MonitorVideo({
         <video
           ref={videoRef}
           className="monitor-video__media"
-          src={MONITOR_VIDEO_SRC}
+          src={videoSrc}
           poster={MONITOR_FALLBACK_SRC}
           autoPlay
           muted

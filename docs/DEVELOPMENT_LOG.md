@@ -1130,4 +1130,49 @@ YOLO 异常检测框、静态图回退提示均不受影响。
 | 双入口 | 主入口与 `/smoking/` 均 200 |
 | 已有站点回归 | fitness(80) 200 |
 
+**Commit**：`a6e9e2aba61d0761e3bb91eae358804523871d71`
+（`fix: remove developer-facing copy from the monitoring UI` → 已推送）
+
+---
+
+## 轮次 20 — Camera 02/03/04 接入循环画面
+
+**背景**：用户提供了 `Video002.mp4`，要求视频监控页的 Camera 02/03/04
+也播放画面（循环播放），三个机位共用同一份素材，同样 0.5× 速度。
+
+**素材**：`Video002.mp4` —— H.264 / yuv420p / 1280×720 / 24 fps / **7.000 s** /
+168 帧 / 1.19 MB，画面为同一条制丝线的另一机位，右下角无水印。
+
+**改动**
+
+| 文件 | 改动 |
+|---|---|
+| `frontend/public/videos/camera-02.mp4` | 新增（`Video002.mp4` 的副本，哈希一致） |
+| `MonitorVideo.tsx` | 新增 `videoSrc` 与 `rate` 两个可选属性（默认主监控视频 / 0.5×）；HEAD 探测与 `<video src>` 改用 `videoSrc`；速率应用逻辑改用 `rate` 并纳入依赖 |
+| `VideoPage.tsx` | Camera 02/03/04 的 `hasStream` 改为 `true`，传入 `CAMERA_VIDEO_SRC` |
+
+**为什么用 `videoSrc` 属性而不是卡片里写死路径**：
+主监控画面需要参与全站时间同步并叠加检测框，其余机位只是画面循环 ——
+两者共用同一个组件、只靠属性区分，避免复制出一份几乎相同的组件。
+
+**三个机位共用同一个文件的理由**：用户明确说明三个机位都用这份素材。
+`CAMERA_VIDEO_SRC` 是独立常量，将来某个机位拿到专属素材时只改那一处即可。
+
+**顺带**：`Video002.mp4` 与 `camera-02.mp4` 均被 `.gitignore` 的 `*.mp4` 规则忽略
+（视频按约定不入库，部署时单独上传）。
+
+**验证**
+
+| 检查项 | 结果 |
+|---|---|
+| 前端 tsc + vite build | 通过（632 模块，无警告） |
+| 产物视频地址 | `videos/main-monitor.mp4?v=2`（主）与 `videos/camera-02.mp4?v=1`（其余机位） |
+| 公网视频资源 | 两者均 200 / `video/mp4`（5441230 / 1245184 字节），带与不带版本参数都正常 |
+| Range 请求 | `camera-02.mp4` `bytes=0-1023` → **206 Partial Content**（循环播放依赖） |
+| 备用入口 | `/smoking/` 下两段视频均 200 |
+| 主监控能力未受影响 | 检测框接口、证据图、`/api/realtime`、`/api/monitor-points` 均 200 |
+| 已有站点回归 | fitness(80) 200 |
+
+**新增**：`scripts/deploy-camera-videos.sh`（放置素材 + 双入口探活 + Range 校验）。
+
 **Commit**：`待填`

@@ -1,13 +1,12 @@
 /**
  * 视频监控页。
  *
- * 原资料存在多摄像头（点位1~点位7），但目前只有 Camera 01 具备真实画面素材。
- * 因此 Camera 01 使用真实素材，其余监控点显示低调的状态卡占位，
- * 不生成夸张的假图片（对应任务要求「多监控点」）。
+ * Camera 01 为主监控画面：参与全站数据同步，并叠加异常检测框。
+ * Camera 02~04 使用同一份现场素材循环播放（0.5×），不参与数据同步。
  */
 
 import Panel from '../components/Panel'
-import MonitorVideo from '../components/MonitorVideo'
+import MonitorVideo, { CAMERA_VIDEO_SRC } from '../components/MonitorVideo'
 import { Badge, MetricList, MetricRow } from '../components/Badge'
 import { IconVideo } from '../components/icons'
 import type { PlatformMeta } from '../types'
@@ -29,7 +28,8 @@ interface PointSlot {
 }
 
 /**
- * 4 个监控点：Camera 01 有真实画面，02~04 为待切换占位。
+ * 4 个监控点。Camera 01 为主监控画面（参与全站数据同步 + 异常检测框）；
+ * Camera 02~04 使用同一份现场素材循环播放。
  *
  * 注意：机位编号与点位号是两套编号 —— 主监控画面是 Camera 01，
  * 对应点位 2（制丝线 2 号输送段）；Camera 02 对应点位 1。
@@ -52,7 +52,7 @@ const POINTS: PointSlot[] = [
     position: 1,
     deviceId: 'RAD-01',
     deviceIp: '192.168.1.197',
-    hasStream: false,
+    hasStream: true,
     mode: '联合判断',
     kind: '雷达 + 视觉',
   },
@@ -62,7 +62,7 @@ const POINTS: PointSlot[] = [
     position: 3,
     deviceId: 'RAD-03',
     deviceIp: '192.168.1.199',
-    hasStream: false,
+    hasStream: true,
     mode: '联合判断',
     kind: '雷达 + 视觉',
   },
@@ -72,7 +72,7 @@ const POINTS: PointSlot[] = [
     position: 4,
     deviceId: 'CAM-04',
     deviceIp: '192.168.1.204',
-    hasStream: false,
+    hasStream: true,
     mode: '单独判断',
     kind: '仅视觉',
   },
@@ -140,6 +140,8 @@ export default function VideoPage({ meta }: VideoPageProps) {
                 showTimestamp={false}
                 hasStream={slot.hasStream}
                 placeholderText={`${slot.camera} 画面待切换`}
+                /* 三个机位共用同一份现场素材，同样 0.5× 循环播放 */
+                videoSrc={CAMERA_VIDEO_SRC}
               />
             </div>
             <div className="video-page__thumb-meta">
