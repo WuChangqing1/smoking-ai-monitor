@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>制丝线物流智能监控与多模态预警平台 · 完成情况</title>
+<style>
+  /* ====================================================================
+     设计令牌 —— 暖白底 + 衬线标题 + 克制的强调色
+     ==================================================================== */
+  :root {
+    --bg:        #faf9f5;
+    --bg-soft:   #f4f2ec;
+    --surface:   #ffffff;
+    --border:    #e8e4da;
+    --border-2:  #ddd7c9;
+    --text:      #2b2a26;
+    --text-sub:  #6b6862;
+    --text-mute: #96918a;
+    --accent:    #c96442;
+    --accent-2:  #d98a5f;
+    --green:     #4f7a4a;
+    --blue:      #4a6b8a;
+    --amber:     #b8860b;
+    --radius:    14px;
+    --radius-sm: 9px;
+    --shadow:    0 1px 2px rgba(43,42,38,.04), 0 8px 24px -12px rgba(43,42,38,.10);
+    --shadow-lg: 0 2px 4px rgba(43,42,38,.04), 0 20px 48px -20px rgba(43,42,38,.16);
+    --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+                  "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+    --font-sans:  -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                  "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --font-mono:  ui-monospace, SFMono-Regular, "SF Mono", Consolas,
+                  "Liberation Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* 背景里两团极淡的暖色光晕，避免大片死白 */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(720px 420px at 12% -6%, rgba(201,100,66,.055), transparent 62%),
+      radial-gradient(640px 460px at 92% 8%, rgba(74,107,138,.05), transparent 60%);
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 0 28px 120px;
+  }
+
+  /* ====================================================================
+     入场动效
+     ==================================================================== */
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes drawLine {
+    from { stroke-dashoffset: var(--len, 1000); }
+    to   { stroke-dashoffset: 0; }
+  }
+  @keyframes pulseRing {
+    0%   { transform: scale(.85); opacity: .55; }
+    70%  { transform: scale(1.9); opacity: 0; }
+    100% { transform: scale(1.9); opacity: 0; }
+  }
+
+  /* 滚动进入视口时才播放，避免首屏之外的元素提前动完 */
+  .reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity .7s cubic-bezier(.22,.61,.36,1),
+                transform .7s cubic-bezier(.22,.61,.36,1);
+    transition-delay: var(--d, 0ms);
+  }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ====================================================================
+     页头
+     ==================================================================== */
+  header.hero {
+    padding: 108px 0 64px;
+    animation: rise .9s cubic-bezier(.22,.61,.36,1) both;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 22px;
+  }
+  .eyebrow .dot {
+    position: relative;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  .eyebrow .dot::after {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulseRing 2.4s ease-out infinite;
+  }
+
+  h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(30px, 4.6vw, 46px);
+    line-height: 1.24;
+    font-weight: 600;
+    letter-spacing: -.015em;
+    margin: 0 0 20px;
+  }
+  h1 .grad {
+    background: linear-gradient(100deg, var(--accent) 6%, var(--accent-2) 58%, var(--amber));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .lede {
+    font-size: 17.5px;
+    color: var(--text-sub);
+    max-width: 62ch;
+    margin: 0 0 34px;
+  }
+
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    animation: fadeIn 1.1s .3s both;
+  }
+  .chip {
+    font-size: 13px;
+    padding: 6px 13px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-sub);
+    box-shadow: 0 1px 2px rgba(43,42,38,.03);
+  }
+  .chip.live { color: var(--green); border-color: #cfe0cd; background: #f3f8f2; }
+
+  /* ====================================================================
+     数字概览
+     ==================================================================== */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+    gap: 14px;
+    margin: 8px 0 76px;
+  }
+
+  .stat {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 20px 20px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: transform .35s cubic-bezier(.22,.61,.36,1),
+                box-shadow .35s, border-color .35s;
+  }
+  .stat::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform .55s cubic-bezier(.22,.61,.36,1);
+  }
+  .stat.in::after { transform: scaleX(1); }
+  .stat:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-2);
+  }
+
+  .stat .num {
+    font-family: var(--font-serif);
+    font-size: 34px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .num .unit {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-mute);
+    margin-left: 4px;
+  }
+  .stat .lbl {
+    margin-top: 7px;
+    font-size: 13px;
+    color: var(--text-sub);
+  }
+
+  /* ====================================================================
+     章节
+     ==================================================================== */
+  section { margin-bottom: 74px; }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 26px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sec-num {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--accent);
+    letter-spacing: .08em;
+    flex-shrink: 0;
+  }
+  h2 {
+    font-family: var(--font-serif);
+    font-size: 25px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    margin: 0;
+  }
+  .sec-note {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--text-mute);
+    flex-shrink: 0;
+  }
+
+  /* 功能卡 */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow);
+    transition: transform .35s cubic-bezier(.22,.61,.36,1),
+                box-shadow .35s, border-color .35s;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-2);
+  }
+
+  .card .ico {
+    width: 34px; height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-sm);
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    margin-bottom: 14px;
+  }
+  .card .ico svg { width: 17px; height: 17px; }
+  .card h3 {
+    font-size: 15.5px;
+    font-weight: 650;
+    margin: 0 0 7px;
+    letter-spacing: -.005em;
+  }
+  .card p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-sub);
+    line-height: 1.7;
+  }
+  .card .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 13px;
+  }
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    padding: 2px 8px;
+    border-radius: 5px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    color: var(--text-mute);
+  }
+
+  /* ====================================================================
+     重点：视频同步 + YOLO 证据链（带示意图）
+     ==================================================================== */
+  .spotlight {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .spotlight-body { padding: 26px 26px 22px; }
+
+  .spotlight h3 {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    font-weight: 600;
+    margin: 0 0 10px;
+  }
+  .spotlight p {
+    margin: 0 0 18px;
+    color: var(--text-sub);
+    font-size: 14.5px;
+  }
+
+  /* 关键帧轨迹图 */
+  .chart { width: 100%; height: auto; display: block; }
+  .chart .grid-line { stroke: var(--border); stroke-width: 1; }
+  .chart .axis-txt {
+    fill: var(--text-mute);
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+  }
+  .chart .curve {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: var(--len, 1000);
+    stroke-dashoffset: var(--len, 1000);
+  }
+  .reveal.in .chart .curve {
+    animation: drawLine 1.7s .25s cubic-bezier(.4,0,.2,1) forwards;
+  }
+  .chart .area { fill: url(#areaGrad); opacity: 0; transition: opacity .9s .9s; }
+  .reveal.in .chart .area { opacity: 1; }
+  .chart .kf { fill: var(--surface); stroke: var(--accent); stroke-width: 2; opacity: 0; }
+  .chart .kf-label { fill: var(--text-sub); font-size: 10px; font-family: var(--font-mono); opacity: 0; }
+  .reveal.in .chart .kf,
+  .reveal.in .chart .kf-label {
+    animation: fadeIn .5s forwards;
+    animation-delay: calc(.55s + var(--i) * .16s);
+  }
+  .chart .threshold {
+    stroke: var(--blue);
+    stroke-width: 1.4;
+    stroke-dasharray: 4 4;
+    opacity: .8;
+  }
+
+  /* 检测框示意 */
+  .box-demo {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+    gap: 14px;
+    padding: 0 26px 26px;
+  }
+  .frame {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background:
+      linear-gradient(160deg, #d9d7d1 0%, #c9c7c1 42%, #b9b7b1 100%);
+  }
+  /* 用极简线条示意输送带，避免引入真实截图 */
+  .frame canvas { display: block; width: 100%; height: 100%; }
+
+  .frame .fbox {
+    position: absolute;
+    border: 2px solid var(--amber);
+    border-radius: 3px;
+    opacity: 0;
+    transition: opacity .5s;
+  }
+  .frame.in .fbox { opacity: 1; }
+  .frame.alarm .fbox { border-color: #c0392b; }
+
+  .frame .flabel {
+    position: absolute;
+    left: -2px;
+    bottom: 100%;
+    margin-bottom: 4px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--amber);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity .5s .15s;
+  }
+  .frame.alarm .flabel { background: #c0392b; }
+  .frame.in .flabel { opacity: 1; }
+
+  .frame .fcap {
+    position: absolute;
+    left: 8px; bottom: 7px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: #3a3936;
+    background: rgba(255,255,255,.72);
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+
+  .frame .ftag {
+    position: absolute;
+    right: 8px; top: 7px;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: #fff;
+    background: var(--amber);
+    opacity: 0;
+    transition: opacity .5s .2s;
+  }
+  .frame.alarm .ftag { background: #c0392b; }
+  .frame.normal .ftag { background: var(--green); }
+  .frame.in .ftag { opacity: 1; }
+
+  /* ====================================================================
+     技术栈 / 表格
+     ==================================================================== */
+  .table-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 12px 18px; }
+  th {
+    background: var(--bg-soft);
+    font-weight: 600;
+    font-size: 12.5px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr + tr td { border-top: 1px solid var(--border); }
+  tbody tr { transition: background .2s; }
+  tbody tr:hover { background: #fcfbf8; }
+  td.mono {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--text-sub);
+  }
+  td.val { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .ok { color: var(--green); font-weight: 600; }
+
+  /* 时间线 */
+  .timeline { position: relative; padding-left: 26px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 5px; top: 6px; bottom: 6px;
+    width: 1px;
+    background: linear-gradient(180deg, var(--border-2), transparent);
+  }
+  .tl-item { position: relative; padding-bottom: 22px; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -25px; top: 8px;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--border-2);
+    transition: border-color .3s, background .3s;
+  }
+  .tl-item:hover::before { border-color: var(--accent); background: var(--accent); }
+  .tl-item .tl-t {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-mute);
+  }
+  .tl-item .tl-h { font-weight: 600; font-size: 14.5px; margin: 2px 0 3px; }
+  .tl-item .tl-d { font-size: 13.5px; color: var(--text-sub); }
+
+  /* 链接区 */
+  .links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 14px;
+  }
+  a.link {
+    display: block;
+    padding: 20px 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: inherit;
+    box-shadow: var(--shadow);
+    transition: transform .3s cubic-bezier(.22,.61,.36,1),
+                box-shadow .3s, border-color .3s;
+  }
+  a.link:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-2);
+  }
+  a.link .lk-t {
+    font-size: 12px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    margin-bottom: 6px;
+  }
+  a.link .lk-u {
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    color: var(--accent);
+    word-break: break-all;
+  }
+  a.link .lk-d { font-size: 13px; color: var(--text-sub); margin-top: 7px; }
+
+  footer {
+    margin-top: 84px;
+    padding-top: 26px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-mute);
+  }
+  footer .sp { margin-left: auto; font-family: var(--font-mono); font-size: 12px; }
+
+  @media (max-width: 620px) {
+    .wrap { padding: 0 18px 80px; }
+    header.hero { padding: 68px 0 44px; }
+    .sec-note { display: none; }
+    section { margin-bottom: 54px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0ms !important; }
+    .chart .curve { stroke-dashoffset: 0 !important; }
+    .chart .kf, .chart .kf-label, .chart .area,
+    .frame .fbox, .frame .flabel, .frame .ftag { opacity: 1 !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============================ 页头 ============================ -->
+  <header class="hero">
+    <div class="eyebrow"><span class="dot"></span>项目进展同步</div>
+    <h1>制丝线物流智能监控<br />与<span class="grad">多模态预警平台</span></h1>
+    <p class="lede">
+      基于《视觉识别及雷达技术在制丝线物流监视的研究与应用》，
+      把 3 台雷达与 15 路摄像头的监测能力做成一套可交付、已上线运行的监控平台。
+      以下是当前完成情况。
+    </p>
+    <div class="hero-meta">
+      <span class="chip live">● 已部署上线</span>
+      <span class="chip">7 个监控点位</span>
+      <span class="chip">18 台设备</span>
+      <span class="chip">28 次提交</span>
+      <span class="chip">仓库 PRIVATE</span>
+    </div>
+  </header>
+
+  <!-- ============================ 数字概览 ============================ -->
+  <div class="stats">
+    <div class="stat reveal" style="--d:0ms">
+      <div class="num" data-count="7">0</div>
+      <div class="lbl">大功能模块</div>
+    </div>
+    <div class="stat reveal" style="--d:80ms">
+      <div class="num" data-count="26">0</div>
+      <div class="lbl">后端接口</div>
+    </div>
+    <div class="stat reveal" style="--d:160ms">
+      <div class="num" data-count="220">0</div>
+      <div class="lbl">后端自动化测试</div>
+    </div>
+    <div class="stat reveal" style="--d:240ms">
+      <div class="num" data-count="101">0</div>
+      <div class="lbl">前后端一致性校验点</div>
+    </div>
+  </div>
+
+  <!-- ============================ 一、功能模块 ============================ -->
+  <section class="reveal">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <h2>已完成的功能模块</h2>
+      <span class="sec-note">全部可在线上环境实测</span>
+    </div>
+
+    <div class="cards">
+      <div class="card reveal" style="--d:0ms">
+        <div class="ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#c96442" stroke-width="1.8" stroke-linecap="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+          </svg>
+        </div>
+        <h3>综合监控</h3>
+        <p>核心监控画面叠加实时数据：雷达测距、物料覆盖率、风险指数、设备负载，一屏掌握当前工况。</p>
+        <div class="tags"><span class="tag">视频同步</span><span class="tag">趋势曲线</span></div>
+      </div>
+
+      <div class="card reveal" style="--d:70ms">
+        <div class="ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4a6b8a" stroke-width="1.8" stroke-linecap="round">
+            <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+          </svg>
+        </div>
+        <h3>雷视联动</h3>
+        <p>雷达几何量测与视觉识别结果并排比对，联合判定正常 / 关注 / 预警 / 异常四级状态。</p>
+        <div class="tags"><span class="tag">联合判断</span><span class="tag">单独判断</span></div>
+      </div>
+
+      <div class="card reveal" style="--d:140ms">
+        <div class="ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#b8860b" stroke-width="1.8" stroke-linecap="round">
+            <path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/>
+          </svg>
+        </div>
+        <h3>异常报警</h3>
+        <p>报警详情包含事件信息、异常证据图、当时画面、雷达趋势、AI 判断与处理过程记录。</p>
+        <div class="tags"><span class="tag">四级报警</span><span class="tag">证据图</span></div>
+      </div>
+
+      <div class="card reveal" style="--d:210ms">
+        <div class="ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4f7a4a" stroke-width="1.8" stroke-linecap="round">
+            <circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>
+          </svg>
+        </div>
+        <h3>数据溯源</h3>
+        <p>按时间段、设备名称查询历史报警，支持异常类型、报警等级、处理状态三个维度筛选。</p>
+        <div class="tags"><span class="tag">多维筛选</span><span class="tag">归档记录</span></div>
+      </div>
+
+      <div class="card reveal" style="--d:280ms">
+        <div class="ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#c96442" stroke-width="1.8" stroke-linecap="round">
+            <path d="M3 17l5-6 4 4 3-4 6 6"/><path d="M3 21h18"/>
+          </svg>
+        </div>
+        <h3>智能预警</h3>
+        <p>30 分钟风险预测，附预测依据、处置建议与相似历史事件比对。结论保持概率化表述。</p>
+        <div class="tags"><span class="tag">趋势外推</span><span class="tag">饱和封顶</span></div>
+      </div>
+
+      <div class="card reveal" style="--d:350ms">
+        <div class="ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4a6b8a" stroke-width="1.8" stroke-linecap="round">
+            <path d="M4 5h7a2 2 0 012 2v13a2 2 0 00-2-2H4z"/><path d="M20 5h-7a2 2 0 00-2 2v13a2 2 0 012-2h7z"/>
+          </svg>
+        </div>
+        <h3>知识库</h3>
+        <p>12 条已归档异常事件（含 3 条来自原始验收资料），支持关键词检索与经验复用。</p>
+        <div class="tags"><span class="tag">SQLite</span><span class="tag">全文检索</span></div>
+      </div>
+
+      <div class="card reveal" style="--d:420ms">
+        <div class="ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4f7a4a" stroke-width="1.8" stroke-linecap="round">
+            <rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/>
+          </svg>
+        </div>
+        <h3>视频监控</h3>
+        <p>主监控点参与全站数据同步并叠加异常检测框，Camera 02~04 循环播放现场画面。</p>
+        <div class="tags"><span class="tag">0.5× 播放</span><span class="tag">画面回退</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 二、两个重点 ============================ -->
+  <section class="reveal">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <h2>两个技术重点</h2>
+      <span class="sec-note">答辩演示的核心看点</span>
+    </div>
+
+    <!-- 重点一：画面与数据同步 -->
+    <div class="spotlight reveal" style="margin-bottom:14px">
+      <div class="spotlight-body">
+        <h3>一、画面与数据严格同步</h3>
+        <p>
+          页面数值不是按“网页运行了多少秒”变化的，而是实时读取监控画面的播放位置解算出来的。
+          因此画面暂停、切换标签页、拖动进度、循环重播，数据都跟着画面走，不会跑偏。
+        </p>
+      </div>
+
+      <svg class="chart" viewBox="0 0 860 240" role="img"
+           aria-label="雷达测距与风险指数随视频时间下降与上升的关键帧轨迹">
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#c96442" stop-opacity=".16"/>
+            <stop offset="100%" stop-color="#c96442" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+
+        <!-- 网格 -->
+        <g>
+          <line class="grid-line" x1="62" y1="40"  x2="820" y2="40"/>
+          <line class="grid-line" x1="62" y1="88"  x2="820" y2="88"/>
+          <line class="grid-line" x1="62" y1="136" x2="820" y2="136"/>
+          <line class="grid-line" x1="62" y1="184" x2="820" y2="184"/>
+        </g>
+
+        <!-- 报警阈值 0.58 m -->
+        <line class="threshold" x1="62" y1="176" x2="820" y2="176"/>
+        <text class="axis-txt" x="826" y="179">0.58</text>
+
+        <!-- 面积 -->
+        <path class="area"
+              d="M62,52 L213,66 L365,88 L516,116 L668,146 L820,170 L820,200 L62,200 Z"/>
+
+        <!-- 测距曲线：0.721 → 0.582 -->
+        <path class="curve" style="--len:820"
+              d="M62,52 L213,66 L365,88 L516,116 L668,146 L820,170"/>
+
+        <!-- 关键帧 -->
+        <g>
+          <circle class="kf" style="--i:0" cx="62"  cy="52"  r="4"/>
+          <circle class="kf" style="--i:1" cx="213" cy="66"  r="4"/>
+          <circle class="kf" style="--i:2" cx="365" cy="88"  r="4"/>
+          <circle class="kf" style="--i:3" cx="516" cy="116" r="4"/>
+          <circle class="kf" style="--i:4" cx="668" cy="146" r="4"/>
+          <circle class="kf" style="--i:5" cx="820" cy="170" r="4"/>
+        </g>
+
+        <g>
+          <text class="kf-label" style="--i:0" x="62"  y="38">0.721m</text>
+          <text class="kf-label" style="--i:1" x="213" y="52">0.706m</text>
+          <text class="kf-label" style="--i:2" x="365" y="74">0.681m</text>
+          <text class="kf-label" style="--i:3" x="516" y="102">0.651m</text>
+          <text class="kf-label" style="--i:4" x="668" y="132">0.612m</text>
+          <text class="kf-label" style="--i:5" x="762" y="156">0.582m</text>
+        </g>
+
+        <!-- 刻度 -->
+        <g>
+          <text class="axis-txt" x="62"  y="218">0s</text>
+          <text class="axis-txt" x="213" y="218">2s</text>
+          <text class="axis-txt" x="365" y="218">4s</text>
+          <text class="axis-txt" x="516" y="218">6s</text>
+          <text class="axis-txt" x="668" y="218">8s</text>
+          <text class="axis-txt" x="820" y="218">10s</text>
+        </g>
+        <text class="axis-txt" x="62" y="232">风险 18% → 89%　·　覆盖率 0.30 → 0.83　·　输送速度 1.00 → 0.80</text>
+      </svg>
+    </div>
+
+    <!-- 重点二：YOLO 证据链 -->
+    <div class="spotlight reveal">
+      <div class="spotlight-body">
+        <h3>二、视觉异常检测与证据链</h3>
+        <p>
+          画面进入预警阶段后，在物料堆积区域叠加一个固定位置的异常区域框；
+          同时生成带框证据图，接入报警详情与数据溯源，作为现场复核依据。
+        </p>
+      </div>
+
+      <div class="box-demo">
+        <div class="frame normal reveal" style="--d:0ms">
+          <canvas class="belt" width="480" height="270"></canvas>
+          <span class="ftag">正常</span>
+          <span class="fcap">t = 3.0s</span>
+        </div>
+        <div class="frame warning reveal" style="--d:140ms">
+          <canvas class="belt" width="480" height="270"></canvas>
+          <span class="fbox" style="left:33.59%; top:26.39%; width:10.39%; height:24.03%"></span>
+          <span class="flabel" style="left:33.59%; top:26.39%">物料堆积 0.92</span>
+          <span class="ftag">预警</span>
+          <span class="fcap">t = 8.5s</span>
+        </div>
+        <div class="frame alarm reveal" style="--d:280ms">
+          <canvas class="belt" width="480" height="270"></canvas>
+          <span class="fbox" style="left:33.59%; top:26.39%; width:10.39%; height:24.03%"></span>
+          <span class="flabel" style="left:33.59%; top:26.39%">物料堆积 0.94</span>
+          <span class="ftag">异常</span>
+          <span class="fcap">t = 9.5s</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 三、技术实现 ============================ -->
+  <section class="reveal">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <h2>技术实现要点</h2>
+      <span class="sec-note">低依赖 · 可验证 · 可扩展</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th style="width:24%">方面</th><th>做法</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>前端</td>
+            <td>React 18 + Vite + TypeScript，手写工业风组件与设计令牌，<strong>不引入组件库</strong>；唯一重依赖是 ECharts</td>
+          </tr>
+          <tr>
+            <td>后端</td>
+            <td>FastAPI + Uvicorn，SQLite 使用标准库 <span class="mono">sqlite3</span>；10 Hz 后台采样线程，历史接口降采样输出</td>
+          </tr>
+          <tr>
+            <td>数据一致性</td>
+            <td>后端是权威定义，前端做等价实现；<strong>101 个时间点 × 6 个字段</strong>逐点比对通过，防止两边漂移</td>
+          </tr>
+          <tr>
+            <td>确定性</td>
+            <td>所有演示数值由时间推导，<strong>不使用随机数</strong>；同一时刻重复计算结果完全一致，适合录屏与答辩</td>
+          </tr>
+          <tr>
+            <td>无真实推理</td>
+            <td>检测框是展示层的异常可视化，<strong>不加载模型权重、不引入推理依赖</strong>（有测试断言防止误加）</td>
+          </tr>
+          <tr>
+            <td>扩展性</td>
+            <td>检测配置按机位编号组织，新增摄像头只需追加配置，解析逻辑与页面代码不动</td>
+          </tr>
+          <tr>
+            <td>稳定性</td>
+            <td>视频缺失自动回退静态画面、后端断开保留末次数据并提示、页面级错误边界，<strong>不出现白屏</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================ 四、验证与部署 ============================ -->
+  <section class="reveal">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <h2>验证结果与部署状态</h2>
+      <span class="sec-note">以下均为实测数据</span>
+    </div>
+
+    <div class="table-wrap" style="margin-bottom:22px">
+      <table>
+        <thead>
+          <tr><th style="width:42%">检查项</th><th style="width:16%">结果</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>后端自动化测试</td><td class="val ok">220 通过</td><td>覆盖数据引擎、接口契约、视频同步、检测框与证据图</td></tr>
+          <tr><td>前后端数据一致性</td><td class="val ok">全部一致</td><td>101 个时间点 × 6 个字段</td></tr>
+          <tr><td>检测框一致性</td><td class="val ok">全部一致</td><td>303 组（101 时刻 × 3 机位）× 9 个字段</td></tr>
+          <tr><td>前端构建</td><td class="val ok">通过</td><td>TypeScript 类型检查 + 生产构建，无警告</td></tr>
+          <tr><td>视频资源</td><td class="val ok">正常</td><td>主监控画面与三个机位画面均可播放，支持断点续传</td></tr>
+          <tr><td>循环播放稳定性</td><td class="val ok">稳定</td><td>连续多轮循环，历史报警保持 6 条不增长</td></tr>
+          <tr><td>服务器其它项目</td><td class="val ok">无影响</td><td>同机既有站点访问正常</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="links" style="margin-bottom:26px">
+      <a class="link reveal" href="http://110.42.236.65:18082/" target="_blank" rel="noopener">
+        <div class="lk-t">主入口</div>
+        <div class="lk-u">http://110.42.236.65:18082/</div>
+        <div class="lk-d">独立端口，与服务器上其它项目完全隔离</div>
+      </a>
+      <a class="link reveal" style="--d:90ms" href="http://110.42.236.65/smoking/" target="_blank" rel="noopener">
+        <div class="lk-t">备用入口</div>
+        <div class="lk-u">http://110.42.236.65/smoking/</div>
+        <div class="lk-d">复用 80 端口的路径式入口，作为兜底</div>
+      </a>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-item reveal" style="--d:0ms">
+        <div class="tl-t">第 1 阶段</div>
+        <div class="tl-h">资料分析与工程初始化</div>
+        <div class="tl-d">梳理原始验收资料，确定 7 个监控点位与 18 台设备口径，建立工业风 UI 基础</div>
+      </div>
+      <div class="tl-item reveal" style="--d:80ms">
+        <div class="tl-t">第 2 阶段</div>
+        <div class="tl-h">后端数据引擎与核心页面</div>
+        <div class="tl-d">统一数据引擎（状态机驱动、连续时间序列），完成综合监控与雷视联动页</div>
+      </div>
+      <div class="tl-item reveal" style="--d:160ms">
+        <div class="tl-t">第 3 阶段</div>
+        <div class="tl-h">报警、溯源、预警与知识库</div>
+        <div class="tl-d">补齐报警详情、数据溯源多维查询、30 分钟风险预测与经验知识库</div>
+      </div>
+      <div class="tl-item reveal" style="--d:240ms">
+        <div class="tl-t">第 4 阶段</div>
+        <div class="tl-h">Linux 部署上线</div>
+        <div class="tl-d">Nginx 双入口 + systemd 托管，后端仅监听回环，公网可访问</div>
+      </div>
+      <div class="tl-item reveal" style="--d:320ms">
+        <div class="tl-t">第 5 阶段</div>
+        <div class="tl-h">监控视频接入与画面同步</div>
+        <div class="tl-d">最终视频接入，实现「画面进度驱动全部页面数值」的同步机制</div>
+      </div>
+      <div class="tl-item reveal" style="--d:400ms">
+        <div class="tl-t">第 6 阶段</div>
+        <div class="tl-h">视觉异常检测与证据链</div>
+        <div class="tl-d">固定异常区域框 + 带框证据图接入报警与溯源；Camera 02~04 画面接入</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 五、后续 ============================ -->
+  <section class="reveal">
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <h2>当前状态</h2>
+    </div>
+    <div class="spotlight">
+      <div class="spotlight-body" style="padding-bottom:26px">
+        <p style="margin-bottom:14px">
+          平台已完整交付并上线运行，答辩演示链路已全部打通：从监控画面到数据变化、
+          从异常检测到证据留存、从报警到溯源归档，均可在线上环境实际操作验证。
+        </p>
+        <p style="margin:0">
+          代码托管在私有仓库，共 <strong>28 次提交</strong>，按阶段留痕，可回溯每一步决策与修复。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>制丝线物流智能监控与多模态预警平台</span>
+    <span class="sp">进度同步文档</span>
+  </footer>
+
+</div>
+
+<script>
+/* ======================================================================
+   1. 滚动进入视口时的入场动效
+   ====================================================================== */
+(function () {
+  const items = document.querySelectorAll('.reveal')
+  if (!('IntersectionObserver' in window)) {
+    items.forEach((el) => el.classList.add('in'))
+    return
+  }
+
+  const io = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return
+        entry.target.classList.add('in')
+        io.unobserve(entry.target)
+      })
+    },
+    { rootMargin: '0px 0px -12% 0px', threshold: 0.12 },
+  )
+
+  items.forEach((el) => io.observe(el))
+})()
+
+/* ======================================================================
+   2. 数字滚动（缓出，尊重减弱动效偏好）
+   ====================================================================== */
+(function () {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const nums = document.querySelectorAll('[data-count]')
+
+  const run = (el) => {
+    const target = Number(el.dataset.count) || 0
+    if (reduce) {
+      el.textContent = String(target)
+      return
+    }
+    const duration = 1150
+    const start = performance.now()
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / duration)
+      /* easeOutCubic */
+      const eased = 1 - Math.pow(1 - p, 3)
+      el.textContent = String(Math.round(target * eased))
+      if (p < 1) requestAnimationFrame(tick)
+      else el.textContent = String(target)
+    }
+    requestAnimationFrame(tick)
+  }
+
+  if (!('IntersectionObserver' in window)) {
+    nums.forEach(run)
+    return
+  }
+
+  const io = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return
+        run(entry.target)
+        io.unobserve(entry.target)
+      })
+    },
+    { threshold: 0.5 },
+  )
+
+  nums.forEach((el) => io.observe(el))
+})()
+
+/* ======================================================================
+   3. 用极简线条画出输送带示意（不引入真实截图，保持文档轻量）
+   ====================================================================== */
+(function () {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  document.querySelectorAll('canvas.belt').forEach((cv, idx) => {
+    const ctx = cv.getContext('2d')
+    if (!ctx) return
+    const W = cv.width
+    const H = cv.height
+
+    /* 机架结构线 */
+    ctx.strokeStyle = 'rgba(90, 88, 84, .30)'
+    ctx.lineWidth = 1.2
+    for (let i = 0; i <= 4; i += 1) {
+      const y = 42 + i * 46
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(W, y - 14)
+      ctx.stroke()
+    }
+    ctx.beginPath()
+    ctx.moveTo(W * 0.46, 0)
+    ctx.lineTo(W * 0.34, H)
+    ctx.stroke()
+
+    /* 输送带：从画面中部斜向下方 */
+    const x0 = W * 0.50, y0 = 26
+    const x1 = W * 0.72, y1 = H - 16
+
+    ctx.strokeStyle = 'rgba(70, 68, 64, .55)'
+    ctx.lineWidth = 17
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(x0, y0)
+    ctx.lineTo(x1, y1)
+    ctx.stroke()
+
+    /* 物料带：随时间变宽变厚（第三张最明显） */
+    const widths = [11, 17, 20]
+    const wMat = widths[Math.min(idx, widths.length - 1)]
+
+    const grad = ctx.createLinearGradient(x0, y0, x1, y1)
+    grad.addColorStop(0, '#a8703c')
+    grad.addColorStop(0.55, '#8f5c30')
+    grad.addColorStop(1, '#7d5029')
+
+    ctx.strokeStyle = grad
+    ctx.lineWidth = wMat
+    ctx.beginPath()
+    ctx.moveTo(x0 + 1, y0 + 6)
+    ctx.lineTo(x1 - 1, y1 - 6)
+    ctx.stroke()
+
+    /* 物料颗粒感：确定性分布，不用随机数 */
+    ctx.fillStyle = 'rgba(120, 78, 40, .5)'
+    for (let i = 0; i < 42; i += 1) {
+      const p = i / 41
+      const px = x0 + (x1 - x0) * p + Math.sin(i * 2.4) * (wMat * 0.32)
+      const py = y0 + (y1 - y0) * p + Math.cos(i * 1.7) * (wMat * 0.32)
+      ctx.beginPath()
+      ctx.arc(px, py, 1.5, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    /* 画面边缘渐隐，避免线条生硬 */
+    const vignette = ctx.createRadialGradient(W / 2, H / 2, H * 0.25, W / 2, H / 2, W * 0.72)
+    vignette.addColorStop(0, 'rgba(0,0,0,0)')
+    vignette.addColorStop(1, 'rgba(60,58,54,.16)')
+    ctx.fillStyle = vignette
+    ctx.fillRect(0, 0, W, H)
+
+    if (!reduce) {
+      cv.style.opacity = '0'
+      cv.style.transition = 'opacity .8s ease'
+      requestAnimationFrame(() => { cv.style.opacity = '1' })
+    }
+  })
+})()
+</script>
+</body>
+</html>
