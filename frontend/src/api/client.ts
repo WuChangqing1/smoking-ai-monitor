@@ -27,14 +27,41 @@ import type {
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, '') ?? ''
 const DEFAULT_TIMEOUT = 8000
 
+/** 部署后的线上地址，用于在本地后端未启动时给出可用的替代入口 */
+const DEPLOYED_URL = 'http://110.42.236.65:18082/'
+
+/** 用 file:// 直接打开 dist/index.html 时，任何 fetch 都会失败 */
+function isFileProtocol(): boolean {
+  return typeof window !== 'undefined' && window.location.protocol === 'file:'
+}
+
 export class ApiError extends Error {
   readonly status: number
+  /** 是否为"连不上后端"这一类错误（区别于后端返回了错误码） */
+  readonly isConnectionError: boolean
 
-  constructor(message: string, status = 0) {
+  constructor(message: string, status = 0, isConnectionError = false) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.isConnectionError = isConnectionError
   }
+}
+
+/** 组装"连不上后端"时的可执行提示，而不是让使用者自己猜 */
+function connectionHint(): string {
+  if (isFileProtocol()) {
+    return (
+      '当前是用文件方式（file://）打开的页面，浏览器不允许它访问接口。' +
+      '请通过服务地址访问：本地开发用 http://127.0.0.1:15173 ，' +
+      `线上环境用 ${DEPLOYED_URL}`
+    )
+  }
+  return (
+    '后端服务未启动或已停止。请在项目根目录执行 scripts\\backend.bat（Windows）' +
+    '或 ./scripts/dev.sh（Linux/macOS）启动后端；' +
+    `若只想查看平台，可直接打开线上地址 ${DEPLOYED_URL}`
+  )
 }
 
 async function request<T>(path: string, init?: RequestInit & { timeout?: number }): Promise<T> {
@@ -56,9 +83,10 @@ async function request<T>(path: string, init?: RequestInit & { timeout?: number 
   } catch (err) {
     if (err instanceof ApiError) throw err
     if (err instanceof DOMException && err.name === 'AbortError') {
-      throw new ApiError(`接口 ${path} 请求超时（${timeout}ms）`)
+      throw new ApiError(`接口 ${path} 请求超时（${timeout}ms），后端可能正在重启`, 0, true)
     }
-    throw new ApiError(`无法连接后端服务（${path}）。请确认后端已在 127.0.0.1:18080 启动。`)
+    // 网络层失败（连接被拒 / DNS / file:// 协议）统一归为"连不上后端"
+    throw new ApiError(`无法连接后端服务（${path}）。${connectionHint()}`, 0, true)
   } finally {
     window.clearTimeout(timer)
   }

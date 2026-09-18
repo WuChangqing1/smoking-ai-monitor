@@ -57,8 +57,13 @@ export default class ErrorBoundary extends Component<Props, State> {
             </button>
           </div>
           <p className="fatal__hint">
-            若持续出现，请确认后端服务已启动：
-            <code>uvicorn app.main:app --host 127.0.0.1 --port 18080</code>
+            若持续出现，请先确认后端服务已启动：
+            <br />
+            Windows：<code>scripts\backend.bat</code>
+            <br />
+            Linux / macOS：<code>./scripts/dev.sh</code>
+            <br />
+            也可直接打开线上地址 <code>http://110.42.236.65:18082/</code> 查看平台。
           </p>
         </div>
       </div>

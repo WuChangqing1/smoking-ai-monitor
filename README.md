@@ -189,6 +189,66 @@ cd frontend
 npm run build        # 产物在 frontend/dist
 ```
 
+### 4.5 一键启动（推荐日常使用）
+
+```bash
+scripts\dev.bat all        # Windows：同时拉起后端与前端
+./scripts/dev.sh all       # Linux / macOS
+```
+
+只想要后端时：
+
+```bash
+scripts\backend.bat            # Windows，前台运行
+scripts\backend-daemon.bat     # Windows，后台守护（崩溃自动重启）
+./scripts/dev.sh               # Linux / macOS
+```
+
+### 4.6 ⚠️ 常见问题：页面显示"实时数据不可用"
+
+这是**最常遇到的报错**，原因几乎总是**后端没启动**。前端本身不产生任何业务数据，
+所有数值都来自后端，后端不在时页面会出现：
+
+```
+实时数据不可用
+无法连接后端服务（/api/realtime?points=120）……
+后端服务未连接
+无法连接后端服务（/api/system/status）……
+```
+
+**排查顺序：**
+
+```bash
+# 1. 后端是否在监听 18080
+netstat -ano | findstr ":18080"        # Windows
+ss -lntp | grep 18080                  # Linux
+
+# 2. 直接访问健康检查
+curl http://127.0.0.1:18080/api/health
+#    期望：{"status":"ok","service":"smoking-monitor-api","version":"0.1.0"}
+```
+
+**解决：** 启动后端即可，不需要刷新其他配置。
+
+```bash
+scripts\backend.bat        # Windows
+./scripts/dev.sh           # Linux / macOS
+```
+
+启动成功后页面会在 1~2 秒内自动恢复（前端每 1 秒轮询一次），**无需手动刷新**。
+
+**其他可能原因：**
+
+| 现象 | 原因 | 解决 |
+|---|---|---|
+| 用 `file://` 直接打开 `dist/index.html` | 浏览器禁止 file 协议访问接口 | 通过服务地址访问：本地 `http://127.0.0.1:15173`，线上 `http://110.42.236.65:18082/` |
+| 后端启动后立刻退出 | 依赖缺失 | `conda activate smoking && pip install -r backend/requirements.txt` |
+| 端口 18080 被占用 | 已有实例在跑 | 说明后端其实已在运行，直接访问健康检查确认 |
+| 线上地址打不开 | 见第 8 节部署说明 | 主入口 `http://110.42.236.65:18082/`，备用 `http://110.42.236.65/smoking/` |
+
+> **提示**：只想快速查看平台效果时，可以直接打开线上地址
+> <http://110.42.236.65:18082/>，不需要在本地启动任何服务。
+
 ---
 
 ## 5. 模拟数据说明
