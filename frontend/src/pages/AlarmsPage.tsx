@@ -6,7 +6,7 @@
  * 只有严重级别才使用红色实心标记。
  *
  * 报警内容口径与原始资料一致：设备名称 + 设备 IP + 报警时间 + 距离信息。
- * 点击任意一行打开报警详情，形成「发现 → 判断 → 报警 → 处理 → 归档」闭环。
+ * 点击任意一行打开报警详情，查看当时的数据、证据图与处理过程。
  */
 
 import { useCallback, useMemo, useState } from 'react'
@@ -203,7 +203,7 @@ export default function AlarmsPage() {
         flush
         title={tab === 'current' ? '未处置报警' : '历史报警记录'}
         icon={<IconAlarm size={14} />}
-        description="点击任意一行查看报警详情与处理闭环"
+        description="点击任意一行查看报警详情与处理过程"
       >
         {list.loading && !list.data ? (
           <div className="alarms__loading">
@@ -228,7 +228,7 @@ export default function AlarmsPage() {
             title={tab === 'current' ? '当前没有未处置报警' : '没有符合条件的报警记录'}
             description={
               tab === 'current'
-                ? '系统运行正常。报警产生后会自动出现在这里，并保留完整处理闭环。'
+                ? '系统运行正常。报警产生后会自动出现在这里，并记录处理过程。'
                 : '可以调整筛选条件后重试。'
             }
           />

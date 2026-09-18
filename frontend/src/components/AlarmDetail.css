@@ -34,10 +34,11 @@
   gap: var(--sp-2);
 }
 
-.alarm-detail__closure {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
+/* 处理人标识（原「闭环完整」徽标已移除：后端固定生成全部阶段，
+   该徽标恒为真，属于没有信息量的装饰） */
+.alarm-detail__operator {
+  color: var(--c-text-muted);
+  font-size: var(--fs-sm);
 }
 
 /* ---- 基本信息两列 ---- */
@@ -143,7 +144,9 @@
 }
 
 /* ==========================================================================
-   处理时间线：发现 → 判断 → 报警 → 处理 → 归档
+   处理过程记录：按时间顺序列出各阶段
+   （原为带编号圆点与连接线的时间线，以及恒为真的「闭环完整」徽标，
+     形式感过强，已改为普通记录列表）
    ========================================================================== */
 
 .alarm-detail__timeline {
@@ -152,45 +155,13 @@
   padding: 0;
   display: flex;
   flex-direction: column;
+  gap: var(--sp-3);
 }
 
 .alarm-detail__step {
-  position: relative;
   display: flex;
-  gap: var(--sp-3);
-  padding-bottom: var(--sp-4);
-}
-
-/* 连接线 */
-.alarm-detail__step:not(:last-child)::before {
-  content: '';
-  position: absolute;
-  left: 10px;
-  top: 22px;
-  bottom: 0;
-  width: 1px;
-  background: var(--c-border);
-}
-
-.alarm-detail__step:last-child {
-  padding-bottom: 0;
-}
-
-.alarm-detail__step-index {
-  position: relative;
-  z-index: 1;
-  flex-shrink: 0;
-  width: 21px;
-  height: 21px;
-  border-radius: 50%;
-  background: var(--c-primary-light);
-  border: 1px solid var(--c-primary-border);
-  color: var(--c-primary-dark);
-  font-family: var(--font-mono);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  line-height: 19px;
-  text-align: center;
+  padding-left: var(--sp-3);
+  border-left: 2px solid var(--c-border);
 }
 
 .alarm-detail__step-body {

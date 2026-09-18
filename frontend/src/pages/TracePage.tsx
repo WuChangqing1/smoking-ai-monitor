@@ -218,8 +218,8 @@ export default function TracePage() {
             并扩展了异常类型、报警等级与处理状态三个维度。
           </p>
           <p className="trace__note">
-            每条记录都保留完整闭环：<strong>发现 → 判断 → 报警 → 处理 → 归档</strong>。
-            点击任意一行可查看当时的监控画面、雷达数据走向与 AI 判断结果。
+            每条记录都保留处理过程记录，点击任意一行可查看当时的监控画面、
+            雷达数据走向与 AI 判断结果。
           </p>
           <p className="trace__note trace__note--muted">
             报警内容口径：设备名称 + 设备 IP + 报警时间 + 距离信息。

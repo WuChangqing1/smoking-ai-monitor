@@ -65,7 +65,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: '异常报警',
     icon: IconAlarm,
     group: '分析与处置',
-    subtitle: '当前报警、历史报警与处置闭环',
+    subtitle: '当前报警、历史报警与处理记录',
   },
   {
     id: 'trace',

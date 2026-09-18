@@ -1,9 +1,8 @@
 /**
  * 报警详情弹层。
  *
- * 内容对应原系统的"异常分析窗口"，并补齐完整闭环：
- *   事件基本信息 + 当时监控画面 + 雷达趋势 + AI 判断 + 处理结果
- *   发现 → 判断 → 报警 → 处理 → 归档
+ * 内容对应原系统的"异常分析窗口"：
+ *   事件基本信息 + 异常证据图 + 当时监控画面 + 雷达趋势 + AI 判断 + 处理过程
  *
  * 数据来自 GET /api/alarms/{id}，弹层本身不计算任何业务结论。
  */
@@ -30,9 +29,6 @@ const LEVEL_TONE: Record<AlarmLevel, 'info' | 'warning' | 'critical'> = {
   warning: 'warning',
   critical: 'critical',
 }
-
-/** 处理闭环的固定阶段顺序，用于提示闭环是否完整 */
-const EXPECTED_STAGES = ['发现', '判断', '报警', '处理', '归档'] as const
 
 function formatTime(ts: number): string {
   return new Date(ts * 1000).toLocaleString('zh-CN', { hour12: false })
@@ -216,29 +212,15 @@ export default function AlarmDetailModal({
             </p>
           </section>
 
-          {/* ---------- 处理闭环 ---------- */}
+          {/* ---------- 处理过程 ---------- */}
           <section className="alarm-detail__section">
-            <SectionTitle
-              extra={
-                <span className="alarm-detail__closure">
-                  处理人：{detail.operator}
-                  {EXPECTED_STAGES.every((s) =>
-                    detail.timeline.some((entry) => entry.stage === s),
-                  ) ? (
-                    <Badge tone="normal">闭环完整</Badge>
-                  ) : (
-                    <Badge tone="warning">闭环待补齐</Badge>
-                  )}
-                </span>
-              }
-            >
+            <SectionTitle extra={<span className="alarm-detail__operator">处理人：{detail.operator}</span>}>
               处理过程
             </SectionTitle>
 
             <ol className="alarm-detail__timeline">
-              {detail.timeline.map((entry, index) => (
-                <li key={`${entry.stage}-${index}`} className="alarm-detail__step">
-                  <span className="alarm-detail__step-index">{index + 1}</span>
+              {detail.timeline.map((entry) => (
+                <li key={`${entry.stage}-${entry.ts}`} className="alarm-detail__step">
                   <div className="alarm-detail__step-body">
                     <div className="alarm-detail__step-head">
                       <span className="alarm-detail__step-stage">{entry.stage}</span>

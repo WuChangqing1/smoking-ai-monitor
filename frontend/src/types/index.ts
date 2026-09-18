@@ -304,7 +304,7 @@ export interface AlarmRecord {
   risk_index: number
 }
 
-/** 报警详情 GET /api/alarms/{id} —— 发现→判断→报警→处理→归档 闭环 */
+/** 报警详情 GET /api/alarms/{id} */
 export interface AlarmDetail extends AlarmRecord {
   /** 基准距离 (m) */
   baseline_distance: number
@@ -326,7 +326,7 @@ export interface AlarmDetail extends AlarmRecord {
     coverage: number
     note: string
   }
-  /** 处理闭环时间线 */
+  /** 处理过程记录 */
   timeline: Array<{
     ts: string
     stage: string
