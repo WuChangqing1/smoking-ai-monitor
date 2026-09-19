@@ -203,9 +203,6 @@ function AppShell({ meta }: { meta: ReturnType<typeof useFetch<PlatformMeta>> })
             <div className="page__head">
               <div className="page__head-left">
                 <h2 className="page__title">{current.label}</h2>
-                {current.subtitle && (
-                  <span className="page__subtitle">{current.subtitle}</span>
-                )}
               </div>
               <div className="page__head-right">
                 {effectiveStatus && (

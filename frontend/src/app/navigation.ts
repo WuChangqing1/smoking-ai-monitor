@@ -34,8 +34,6 @@ export interface NavItem {
   icon: IconComponent
   /** 分组标题，用于导航分区 */
   group: '实时监控' | '分析与处置' | '系统'
-  /** 页面副标题（可选；不写则不显示） */
-  subtitle?: string
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -44,14 +42,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: '综合监控',
     icon: IconDashboard,
     group: '实时监控',
-    subtitle: '制丝线物流实时状态总览',
   },
   {
     id: 'video',
     label: '视频监控',
     icon: IconVideo,
     group: '实时监控',
-    subtitle: '多监控点画面与设备状态',
   },
   {
     id: 'fusion',
@@ -64,35 +60,30 @@ export const NAV_ITEMS: NavItem[] = [
     label: '异常报警',
     icon: IconAlarm,
     group: '分析与处置',
-    subtitle: '当前报警、历史报警与处理记录',
   },
   {
     id: 'trace',
     label: '数据溯源',
     icon: IconTrace,
     group: '分析与处置',
-    subtitle: '按时间、设备与类型检索历史事件',
   },
   {
     id: 'prediction',
     label: '智能预警',
     icon: IconPredict,
     group: '分析与处置',
-    subtitle: '未来 30 分钟风险预测与预警依据',
   },
   {
     id: 'knowledge',
     label: '知识库',
     icon: IconKnowledge,
     group: '分析与处置',
-    subtitle: '历史异常事件与处理记录',
   },
   {
     id: 'settings',
     label: '系统设置',
     icon: IconSettings,
     group: '系统',
-    subtitle: '检测任务启停、阈值与系统能力',
   },
 ]
 

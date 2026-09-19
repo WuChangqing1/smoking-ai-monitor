@@ -71,14 +71,6 @@
   border-radius: 1px;
 }
 
-.page__subtitle {
-  font-size: var(--fs-sm);
-  color: var(--c-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .page__head-right {
   display: flex;
   align-items: center;
@@ -192,8 +184,5 @@
 @media (max-width: 720px) {
   .grid--4 {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .page__subtitle {
-    display: none;
   }
 }

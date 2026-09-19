@@ -48,7 +48,7 @@ export default function Sidebar({
                         type="button"
                         className={`sidebar__item${active ? ' sidebar__item--active' : ''}`}
                         onClick={() => onNavigate(item.id)}
-                        title={collapsed ? `${item.label} · ${item.subtitle}` : item.subtitle}
+                        title={item.label}
                         aria-current={active ? 'page' : undefined}
                       >
                         <span className="sidebar__icon">
