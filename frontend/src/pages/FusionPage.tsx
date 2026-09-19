@@ -6,7 +6,7 @@
  *   视觉负责复杂场景与形态语义理解；
  *   融合算法负责把两者结合，降低单一信息源的局限。
  *
- * 布局：上部 2×2＝现场画面 / 雷达分析 / 视觉 AI / 联合判定；下部＝时间趋势。
+ * 布局：左＝监控视频 / 中＝雷达分析 / 右＝视觉 AI + 联合判定 / 下＝时间趋势。
  * 数据全部来自 GET /api/realtime（约 1 s 轮询），联合结论由后端计算，前端只呈现。
  */
 
@@ -77,13 +77,14 @@ export default function FusionPage({ realtime, realtimeError }: FusionPageProps)
 
   return (
     <div className="fusion">
-      {/* 上部 2×2：现场画面 | 雷达分析 / 视觉 AI | 联合判定 */}
-      <div className="fusion__grid">
+      {/* ===================== 上部：视频 / 雷达 / 视觉 + 判定 ===================== */}
+      <div className="fusion__top">
         {/* ---- 左：监控视频 ---- */}
         <Panel
           flush
           title="现场画面"
           icon={<IconVideo size={14} />}
+          className="fusion__video-panel"
           description={`${realtime.monitor_point.code} · ${realtime.monitor_point.name}`}
           extra={
             <Badge tone={detection_running ? 'primary' : 'idle'} dot>
@@ -107,6 +108,7 @@ export default function FusionPage({ realtime, realtimeError }: FusionPageProps)
           title="雷达分析"
           icon={<IconRadar size={14} />}
           tone={distanceLow ? 'warning' : 'default'}
+          bodyClassName="fusion__radar-body"
           extra={
             <Badge tone={radar.online && radar.data_fresh ? 'normal' : 'idle'} dot>
               {radar.online ? (radar.data_fresh ? '在线' : '已停止刷新') : '离线'}
@@ -185,110 +187,107 @@ export default function FusionPage({ realtime, realtimeError }: FusionPageProps)
         </Panel>
 
         {/* ---- 右：视觉 AI + 联合判定 ---- */}
-        <Panel
-          title="视觉 AI"
-          icon={<IconPerson size={14} />}
-          extra={
-            <Badge tone={vision.online ? 'normal' : 'idle'} dot>
-              {vision.online ? '在线' : '离线'}
-            </Badge>
-          }
-        >
-          <div className="fusion__vision-status">
-            <span className="fusion__vision-label">{vision.label_text}</span>
-            <Badge tone={vision.label === 'normal_conveying' ? 'normal' : 'warning'}>
-              {vision.label}
-            </Badge>
-          </div>
+        <div className="fusion__right">
+          <Panel
+            title="视觉 AI"
+            icon={<IconPerson size={14} />}
+            bodyClassName="fusion__vision-body"
+            extra={
+              <Badge tone={vision.online ? 'normal' : 'idle'} dot>
+                {vision.online ? '在线' : '离线'}
+              </Badge>
+            }
+          >
+            <div className="fusion__vision-status">
+              <span className="fusion__vision-label">{vision.label_text}</span>
+              <Badge tone={vision.label === 'normal_conveying' ? 'normal' : 'warning'}>
+                {vision.label}
+              </Badge>
+            </div>
 
-          <MetricList className="fusion__vision-list">
-            <MetricRow
-              label="置信度"
-              value={(vision.confidence * 100).toFixed(1)}
-              unit="%"
-              tone={vision.confidence < 0.9 ? 'warning' : 'normal'}
-              hint="概率模型输出，不是准确率"
-            />
-            <MetricRow
-              label="物料覆盖率"
-              value={(vision.coverage * 100).toFixed(1)}
-              unit="%"
-              tone={vision.coverage > 0.6 ? 'warning' : 'idle'}
-            />
-            <MetricRow
-              label="推理耗时"
-              value={vision.latency_ms}
-              unit="ms"
-              hint="单帧推理耗时，视觉链路的固有延迟"
-            />
-            <MetricRow
-              label="输送有效速度"
-              value={environment.conveyor_speed.toFixed(2)}
-              unit="m/s"
-              tone={
-                environment.conveyor_speed < environment.conveyor_speed_baseline - 0.05
-                  ? 'warning'
-                  : 'idle'
-              }
-              hint={`基准 ${environment.conveyor_speed_baseline.toFixed(2)} m/s`}
-            />
-          </MetricList>
-        </Panel>
+            <MetricList className="fusion__vision-list">
+              <MetricRow
+                label="置信度"
+                value={(vision.confidence * 100).toFixed(1)}
+                unit="%"
+                tone={vision.confidence < 0.9 ? 'warning' : 'normal'}
+                hint="概率模型输出，不是准确率"
+              />
+              <MetricRow
+                label="物料覆盖率"
+                value={(vision.coverage * 100).toFixed(1)}
+                unit="%"
+                tone={vision.coverage > 0.6 ? 'warning' : 'idle'}
+              />
+              <MetricRow
+                label="推理耗时"
+                value={vision.latency_ms}
+                unit="ms"
+                hint="单帧推理耗时，视觉链路的固有延迟"
+              />
+              <MetricRow
+                label="输送有效速度"
+                value={environment.conveyor_speed.toFixed(2)}
+                unit="m/s"
+                tone={
+                  environment.conveyor_speed < environment.conveyor_speed_baseline - 0.05
+                    ? 'warning'
+                    : 'idle'
+                }
+                hint={`基准 ${environment.conveyor_speed_baseline.toFixed(2)} m/s`}
+              />
+            </MetricList>
+          </Panel>
 
-        {/* 联合判定区：本页视觉重点 */}
-        <Panel
-          title="联合判定"
-          icon={<IconRadar size={14} />}
-          tone={verdictTone === 'critical' ? 'critical' : verdictTone === 'warning' ? 'warning' : 'primary'}
-          bodyClassName="fusion__verdict-body"
-        >
-          <div className="fusion__formula">
-            <span className="fusion__formula-node">雷达</span>
-            <span className="fusion__formula-op">+</span>
-            <span className="fusion__formula-node">视觉</span>
-            <span className="fusion__formula-arrow">↓</span>
-            <span className={`fusion__formula-result is-${verdictTone}`}>
-              {fusion.verdict_text}
-            </span>
-          </div>
+          {/* 联合判定区：本页视觉重点 */}
+          <Panel
+            title="联合判定"
+            icon={<IconRadar size={14} />}
+            tone={verdictTone === 'critical' ? 'critical' : verdictTone === 'warning' ? 'warning' : 'primary'}
+            extra={
+              <Badge tone={verdictTone === 'critical' ? 'critical' : verdictTone === 'warning' ? 'warning' : 'normal'} dot>
+                {fusion.verdict_text}
+              </Badge>
+            }
+          >
+            <ul className="fusion__basis">
+              <li>
+                <span className="fusion__basis-key">雷达</span>
+                <span className="fusion__basis-val">
+                  {radar.delta < -0.005
+                    ? `距离持续下降，较基准 ${radar.delta.toFixed(3)} m`
+                    : '距离在基准附近小幅波动'}
+                </span>
+              </li>
+              <li>
+                <span className="fusion__basis-key">视觉</span>
+                <span className="fusion__basis-val">
+                  {vision.label_text}，覆盖率 {(vision.coverage * 100).toFixed(1)}%
+                </span>
+              </li>
+              <li>
+                <span className="fusion__basis-key">联合判断</span>
+                <span className="fusion__basis-val">
+                  风险指数 {risk.index.toFixed(1)}%（{risk.level_text}），
+                  {risk.trend_text}
+                </span>
+              </li>
+            </ul>
 
-          <ul className="fusion__basis">
-            <li>
-              <span className="fusion__basis-key">雷达</span>
-              <span className="fusion__basis-val">
-                {radar.delta < -0.005
-                  ? `距离持续下降，较基准 ${radar.delta.toFixed(3)} m`
-                  : '距离在基准附近小幅波动'}
+            <p className="fusion__reason">{fusion.reason}</p>
+
+            <div className="fusion__mode">
+              <Badge tone="primary">
+                {fusion.mode === 'fusion' ? '雷达 + 视觉 联合判断' : '视觉单独判断'}
+              </Badge>
+              <span className="fusion__mode-note">
+                {sim_state === 'stopped'
+                  ? '检测任务已停止，判断结果保持停止时的状态'
+                  : `当前工况：${realtime.sim_state_text}`}
               </span>
-            </li>
-            <li>
-              <span className="fusion__basis-key">视觉</span>
-              <span className="fusion__basis-val">
-                {vision.label_text}，覆盖率 {(vision.coverage * 100).toFixed(1)}%
-              </span>
-            </li>
-            <li>
-              <span className="fusion__basis-key">联合判断</span>
-              <span className="fusion__basis-val">
-                风险指数 {risk.index.toFixed(1)}%（{risk.level_text}），
-                {risk.trend_text}
-              </span>
-            </li>
-          </ul>
-
-          <p className="fusion__reason">{fusion.reason}</p>
-
-          <div className="fusion__mode">
-            <Badge tone="primary">
-              {fusion.mode === 'fusion' ? '雷达 + 视觉 联合判断' : '视觉单独判断'}
-            </Badge>
-            <span className="fusion__mode-note">
-              {sim_state === 'stopped'
-                ? '检测任务已停止，判断结果保持停止时的状态'
-                : `当前工况：${realtime.sim_state_text}`}
-            </span>
-          </div>
-        </Panel>
+            </div>
+          </Panel>
+        </div>
       </div>
 
       {/* ===================== 下部：时间趋势 ===================== */}

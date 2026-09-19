@@ -1,7 +1,6 @@
 /* ==========================================================================
    雷视联动页
-   上＝现场画面 / 雷达分析 / 视觉 AI / 联合判定（2×2）
-   下＝两条趋势曲线
+   左＝视频 / 中＝雷达分析 / 右＝视觉 AI + 联合判定 / 下＝趋势
    ========================================================================== */
 
 .fusion {
@@ -11,32 +10,68 @@
   min-width: 0;
 }
 
-/*
- * 上部 2×2：现场画面 | 雷达分析
- *          视觉 AI | 联合判定
- *
- * 左列 36%：视频容器固定 16:9，卡高由列宽决定，此比例下与右侧
- * 「雷达分析」等高。
- * align-items: start 让每张卡按自身内容取高，不被同行拉出内部空白。
- */
-.fusion__grid {
+.fusion__top {
   display: grid;
-  grid-template-columns: minmax(0, 36%) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1.15fr);
   gap: var(--sp-4);
-  align-items: start;
+  align-items: stretch;
   min-width: 0;
+}
+
+/*
+ * 「雷达分析」与右列等高：卡内多出的高度由读数区吸收。
+ * 「现场画面」按自身内容取高 —— 视频固定 16:9，拉高只会把画面撑变形。
+ */
+.fusion__top > .panel:not(.fusion__video-panel) {
+  display: flex;
+  flex-direction: column;
+}
+
+.fusion__video-panel {
+  align-self: start;
 }
 
 .fusion__video {
   padding: var(--sp-3);
 }
 
-/* 视觉 AI 的 4 项指标排成两列，填满卡片高度 */
+.fusion__right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/*
+ * 右列两张卡：视觉 AI 撑满剩余高度，把「联合判定」顶到与
+ * 左侧视频卡、雷达卡同一水平线上。
+ */
+.fusion__right > .panel:first-child {
+  flex: 1;
+}
+
+.fusion__vision-body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 4 项指标横向排成一行，各自纵向摆「标签 / 数值」 */
 .fusion__vision-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 var(--sp-4);
-  align-content: start;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.fusion__vision-list .metric-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 0;
+  border-bottom: 0;
+}
+
+.fusion__vision-list .metric-row__value {
+  text-align: left;
 }
 
 /* ---- 大号读数 ---- */
@@ -65,9 +100,36 @@
 
 .fusion__headline-label {
   margin-left: auto;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-base);
   color: var(--c-text-muted);
   white-space: nowrap;
+}
+
+/*
+ * 中间「雷达分析」列与右列等高，卡内因此多出一段高度。
+ * 让读数区吸收这段高度：6 行读数均分，字号略放大，
+ * 传感器规格留在卡片底部。
+ */
+.fusion__radar-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.fusion__radar-body .metric-list {
+  flex: 1;
+  justify-content: space-between;
+}
+
+.fusion__radar-body .metric-row {
+  padding: 6px 0;
+}
+
+.fusion__radar-body .metric-row__label {
+  font-size: var(--fs-md);
+}
+
+.fusion__radar-body .metric-row__value {
+  font-size: 18px;
 }
 
 /* ---- 传感器规格 ---- */
@@ -89,12 +151,12 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--sp-2);
-  padding: 5px 0;
+  padding: 6px 0;
   border-bottom: 1px dashed var(--c-border);
 }
 
 .fusion__spec-list dt {
-  font-size: var(--fs-sm);
+  font-size: var(--fs-base);
   color: var(--c-text-muted);
   white-space: nowrap;
 }
@@ -102,7 +164,7 @@
 .fusion__spec-list dd {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: var(--fs-base);
+  font-size: var(--fs-md);
   font-weight: 600;
   color: var(--c-text-sub);
   white-space: nowrap;
@@ -132,85 +194,6 @@
 /* ==========================================================================
    联合判定区
    ========================================================================== */
-
-/*
- * 本卡与「雷达分析」同一行，行高由后者决定，卡高因此大于内容高度。
- * 用整列弹性布局把底部状态行按到卡片底边，剩余空间落在正文之后，
- * 而不是把状态行留在半空中、下方空一截。
- */
-.fusion__verdict-body {
-  display: flex;
-  flex-direction: column;
-}
-
-.fusion__formula {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-3);
-  padding: var(--sp-3) 0 var(--sp-4);
-  flex-wrap: wrap;
-}
-
-.fusion__formula-node {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 62px;
-  height: 32px;
-  padding: 0 var(--sp-3);
-  border: 1px solid var(--c-border-strong);
-  border-radius: var(--r-sm);
-  background: var(--c-surface-alt);
-  font-size: var(--fs-md);
-  font-weight: 600;
-  color: var(--c-text-sub);
-}
-
-.fusion__formula-op {
-  font-size: var(--fs-lg);
-  color: var(--c-text-muted);
-}
-
-.fusion__formula-arrow {
-  font-size: var(--fs-lg);
-  color: var(--c-text-muted);
-}
-
-.fusion__formula-result {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 88px;
-  height: 38px;
-  padding: 0 var(--sp-4);
-  border: 1px solid transparent;
-  border-radius: var(--r-sm);
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.fusion__formula-result.is-normal {
-  background: var(--c-normal-bg);
-  border-color: var(--c-primary-border);
-  color: var(--c-primary-dark);
-}
-.fusion__formula-result.is-info {
-  background: var(--c-info-bg);
-  border-color: #cfdae4;
-  color: var(--c-info);
-}
-.fusion__formula-result.is-warning {
-  background: var(--c-warning);
-  border-color: var(--c-warning);
-  color: #fff;
-}
-.fusion__formula-result.is-critical {
-  background: var(--c-critical);
-  border-color: var(--c-critical);
-  color: #fff;
-}
 
 /* ---- 判断依据 ---- */
 .fusion__basis {
@@ -259,7 +242,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--sp-3);
-  margin-top: auto;
+  margin-top: var(--sp-3);
   padding-top: var(--sp-3);
   border-top: 1px solid var(--c-border);
 }
@@ -273,11 +256,27 @@
    响应式
    ========================================================================== */
 
+@media (max-width: 1560px) {
+  .fusion__top {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .fusion__top > :first-child {
+    grid-column: 1 / -1;
+  }
+  .fusion__vision-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1100px) {
-  .fusion__grid {
+  .fusion__top {
     grid-template-columns: minmax(0, 1fr);
   }
   .fusion__spec-list {
     grid-template-columns: minmax(0, 1fr);
+  }
+  /* 单列后不再需要撑高对齐 */
+  .fusion__right > .panel:first-child {
+    flex: 0 1 auto;
   }
 }
