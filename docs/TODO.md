@@ -183,14 +183,14 @@
 
 ## 交付文档
 
-- `docs/team-progress.html` —— 面向队友的进度同步文档（单文件 HTML，含动效）
+- `docs/任务进展.html` —— 面向队友的进度同步文档（单文件 HTML，含动效）
   - 浏览器直接打开即可，**不随平台部署**，也不需要服务器
   - 校验：`node scripts/check-progress-doc.mjs`（标签配对、脚本语法、SVG 坐标、关键数据）
 
 ## 待确认 / 风险
 
-- [ ] 最终监控视频未到位 → 已用固定路径 `frontend/public/videos/main-monitor.mp4` + 静态图 fallback 解耦
-- [ ] 视频若超过 GitHub 单文件限制 → 走 Git LFS / 服务器单独部署 / gitignore（三选一，不阻塞开发）
+- [ ] 根目录 `无Camera版.png`（1475×1066，1.8 MB）用途待确认，暂未入库
+- [ ] 视频若超过 GitHub 单文件限制 → 已用 `*.mp4` 通配规则忽略，走服务器单独部署
 
 ## 环境说明（非阻塞，已在 DEVELOPMENT_LOG 记录）
 

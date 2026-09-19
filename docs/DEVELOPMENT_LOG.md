@@ -1175,4 +1175,50 @@ YOLO 异常检测框、静态图回退提示均不受影响。
 
 **新增**：`scripts/deploy-camera-videos.sh`（放置素材 + 双入口探活 + Range 校验）。
 
+**Commit**：`87e54b167ee9358ee5e9dc63783600e11633d1f3`
+（`feat: play looping footage for cameras 02-04` → 已推送）
+
+---
+
+## 轮次 21 — Camera 03/04 接入各自素材
+
+**背景**：用户提供了 `003.mp4` 与 `004.mp4`，要求分别作为 Camera 03、Camera 04
+的画面，同样 0.5× 循环播放。此前三个机位共用同一份素材。
+
+**素材**
+
+| 文件 | 用途 | 时长 | 帧数 | 大小 |
+|---|---|---|---|---|
+| `Video002.mp4` | Camera 02 | 7.000 s | 168 | 1.19 MB |
+| `003.mp4` | Camera 03 | 7.000 s | 168 | 1.31 MB |
+| `004.mp4` | Camera 04 | 7.500 s | 180 | 1.43 MB |
+
+三者均为 H.264 / yuv420p / 1280×720 / 24 fps，抽帧确认是同一现场的不同机位。
+
+**改动**
+
+| 文件 | 改动 |
+|---|---|
+| `frontend/public/videos/camera-03.mp4`、`camera-04.mp4` | 新增（与源文件哈希一致） |
+| `MonitorVideo.tsx` | `CAMERA_VIDEO_PATH` / `CAMERA_VIDEO_VERSION` 由单值改为**按机位编号的映射**，新增 `cameraVideoSrc(camera)` 取值函数 |
+| `VideoPage.tsx` | 改用 `cameraVideoSrc(slot.camera)`，各机位取各自素材 |
+| `frontend/public/videos/README.md` | 补全四个文件清单、替换步骤与「为什么必须改版本号」 |
+
+**为什么用映射而不是继续传同一个常量**：三个机位已有独立素材，
+将来替换其中某一个时，只需改对应键的路径与版本号，不必动其它机位。
+
+**验证**
+
+| 检查项 | 结果 |
+|---|---|
+| 前端 tsc + vite build | 通过（632 模块，无警告） |
+| 产物机位映射 | `Camera 02/03/04` → `camera-02/03/04.mp4` 完整 |
+| 公网四段视频 | 均 200 / `video/mp4`（5441230 / 1245184 / 1371140 / 1498080 字节） |
+| Range 请求 | 四段全部 **206**，`Content-Range` 正确（循环播放依赖） |
+| 双入口 | 主入口与 `/smoking/` 下四段视频均 200 |
+| 平台功能 | 检测框接口、证据图、`/api/realtime`、`/api/monitor-points` 均 200 |
+| 已有站点回归 | fitness(80) 200 |
+
+**新增**：`scripts/put-camera-video.sh`（按文件名增补机位素材，不触碰其它视频）。
+
 **Commit**：`待填`

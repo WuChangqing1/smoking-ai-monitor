@@ -6,7 +6,7 @@
  */
 
 import Panel from '../components/Panel'
-import MonitorVideo, { CAMERA_VIDEO_SRC } from '../components/MonitorVideo'
+import MonitorVideo, { cameraVideoSrc } from '../components/MonitorVideo'
 import { Badge, MetricList, MetricRow } from '../components/Badge'
 import { IconVideo } from '../components/icons'
 import type { PlatformMeta } from '../types'
@@ -140,8 +140,8 @@ export default function VideoPage({ meta }: VideoPageProps) {
                 showTimestamp={false}
                 hasStream={slot.hasStream}
                 placeholderText={`${slot.camera} 画面待切换`}
-                /* 三个机位共用同一份现场素材，同样 0.5× 循环播放 */
-                videoSrc={CAMERA_VIDEO_SRC}
+                /* 各机位播放各自的现场素材，同样 0.5× 循环播放 */
+                videoSrc={cameraVideoSrc(slot.camera)}
               />
             </div>
             <div className="video-page__thumb-meta">

@@ -1,5 +1,5 @@
 /**
- * 校验 docs/team-progress.html（开发期工具）。
+ * 校验 docs/任务进展.html（开发期工具）。
  *
  * 检查：
  *   1. 标签配对（忽略自闭合与 void 元素）
@@ -10,13 +10,20 @@
  * 用法：node scripts/check-progress-doc.mjs
  */
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Script } from 'node:vm'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const FILE = resolve(__dirname, '../docs/team-progress.html')
+
+/* 文档改过名，这里按候选顺序取第一个存在的文件 */
+const CANDIDATES = ['../docs/任务进展.html', '../docs/team-progress.html']
+const FILE = CANDIDATES.map((p) => resolve(__dirname, p)).find((p) => existsSync(p))
+if (!FILE) {
+  console.error(`✗ 未找到进度文档，候选路径：\n  ${CANDIDATES.join('\n  ')}`)
+  process.exit(1)
+}
 const html = readFileSync(FILE, 'utf8')
 
 const problems = []

@@ -44,13 +44,29 @@ export const MONITOR_VIDEO_SRC = `${MONITOR_VIDEO_PATH}?v=${MONITOR_VIDEO_VERSIO
 /**
  * 其余监控点（Camera 02/03/04）的循环画面。
  *
- * 当前三个机位共用同一份现场素材，因此指向同一个文件；
- * 后续某个机位拿到独立素材时，把对应的常量换掉即可，组件无需改动。
- * 三个机位与主监控点一样按 0.5× 播放。
+ * 三个机位各有独立素材，按机位编号对应各自的文件。
+ * 替换某个机位的素材时，换掉路径常量、并把该机位版本号 +1（理由同主监控视频）。
+ * 播放速率与主监控点一致，都是 0.5×。
  */
-export const CAMERA_VIDEO_PATH = 'videos/camera-02.mp4'
-export const CAMERA_VIDEO_VERSION = 1
-export const CAMERA_VIDEO_SRC = `${CAMERA_VIDEO_PATH}?v=${CAMERA_VIDEO_VERSION}`
+export const CAMERA_VIDEO_PATH: Record<string, string> = {
+  'Camera 02': 'videos/camera-02.mp4',
+  'Camera 03': 'videos/camera-03.mp4',
+  'Camera 04': 'videos/camera-04.mp4',
+}
+
+/** 各机位素材版本号，替换素材时同步 +1 */
+export const CAMERA_VIDEO_VERSION: Record<string, number> = {
+  'Camera 02': 1,
+  'Camera 03': 1,
+  'Camera 04': 1,
+}
+
+/** 取某个机位的实际请求地址（带版本参数）；未配置的机位回退到主监控视频 */
+export function cameraVideoSrc(camera: string): string {
+  const path = CAMERA_VIDEO_PATH[camera]
+  if (!path) return MONITOR_VIDEO_SRC
+  return `${path}?v=${CAMERA_VIDEO_VERSION[camera] ?? 1}`
+}
 
 /** 静态回退画面（由 检测图片.png 生成） */
 export const MONITOR_FALLBACK_SRC = 'images/main-monitor-fallback.png'
@@ -73,7 +89,7 @@ interface MonitorVideoProps {
   showDetection?: boolean
   /**
    * 画面视频地址。默认使用主监控点视频；
-   * 其余点位传入各自的循环画面文件即可（见 CAMERA_VIDEO_SRC）。
+   * 其余点位传入各自的循环画面文件即可（见 cameraVideoSrc）。
    */
   videoSrc?: string
   /**
