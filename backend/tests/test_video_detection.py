@@ -302,7 +302,11 @@ class TestEvidenceImage:
         )
 
     def test_evidence_image_helper(self) -> None:
-        assert evidence_image_for("material_accumulation") == PRIMARY_DETECTION.evidence_image
+        # 返回值在配置路径基础上附加缓存版本参数（替换图片后强制刷新）
+        result = evidence_image_for("material_accumulation")
+        assert result is not None
+        assert result.startswith(PRIMARY_DETECTION.evidence_image)
+        assert "?v=" in result
         # 无证据图的类型返回 None，调用方据此不渲染区块
         assert evidence_image_for("conveyor_speed_drop") is None
 

@@ -92,6 +92,34 @@ DETECTION_CONFIGS: dict[str, DetectionBoxConfig] = {
     PRIMARY_DETECTION.camera_id: PRIMARY_DETECTION,
 }
 
+# ---------------------------------------------------------------------------
+# 监控画面与证据图的缓存版本
+# ---------------------------------------------------------------------------
+#
+# 图片文件名固定（便于替换），但 HTTP 缓存无法感知内容变化：
+# 沿用同一个 URL 时，浏览器会在缓存有效期内继续显示旧图 ——
+# 曾因此出现"服务器已换成去水印新图、页面上仍是带水印旧图"。
+#
+# 把版本号拼进查询串即可让 URL 变化，浏览器必然重新拉取。
+# **每次替换监控画面或证据图时，都要把对应的版本号 +1。**
+#
+# 查询串对 Nginx 静态文件服务无影响（只按路径匹配 $uri）。
+
+#: 报警详情「当时监控画面」的图片版本
+SNAPSHOT_IMAGE_VERSION = 2
+
+#: 异常证据图的版本
+EVIDENCE_IMAGE_VERSION = 2
+
+
+def _versioned(path: str, version: int) -> str:
+    return f"{path}?v={version}"
+
+
+def snapshot_image() -> str:
+    """报警详情「当时监控画面」的图片地址（带缓存版本参数）。"""
+    return _versioned("images/main-monitor-fallback.png", SNAPSHOT_IMAGE_VERSION)
+
 
 def config_for(camera_id: str) -> DetectionBoxConfig | None:
     """取某摄像头的检测配置；未配置时返回 None（表示该点位暂无视觉检测框）。"""
@@ -191,7 +219,9 @@ def resolve_video_detection_box(
         label_text=config.label_text,
         confidence=detection_confidence_for_risk(telemetry.risk_index),
         severity=severity,
-        evidence_image=config.evidence_image if visible else None,
+        evidence_image=(
+            _versioned(config.evidence_image, EVIDENCE_IMAGE_VERSION) if visible else None
+        ),
     )
 
 
@@ -202,5 +232,5 @@ def evidence_image_for(event_type: str = "material_accumulation") -> str | None:
     调用方据此不渲染证据区块，而不是给出一个 404 的图片地址。
     """
     if event_type == PRIMARY_DETECTION.label:
-        return PRIMARY_DETECTION.evidence_image
+        return _versioned(PRIMARY_DETECTION.evidence_image, EVIDENCE_IMAGE_VERSION)
     return None

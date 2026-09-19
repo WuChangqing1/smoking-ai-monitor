@@ -469,8 +469,10 @@ export function buildCurrentAlarm(
   const detail: AlarmDetail = {
     ...record,
     baseline_distance: telemetry.baseline_distance,
-    snapshot: 'images/main-monitor-fallback.png',
-    evidence_image: 'images/evidence/main-camera-material-accumulation.jpg',
+    /* 带缓存版本参数：替换监控画面 / 证据图后浏览器不会继续显示旧图。
+       与后端 video_detection.py 的 SNAPSHOT_IMAGE_VERSION / EVIDENCE_IMAGE_VERSION 保持一致。 */
+    snapshot: 'images/main-monitor-fallback.png?v=2',
+    evidence_image: 'images/evidence/main-camera-material-accumulation.jpg?v=2',
     evidence_note: '视觉模型检测到物料堆积异常区域，系统已生成带框截图供现场人员复核。',
     /* 趋势图用本轮已走过的轨迹，与首页、雷视联动同源 */
     radar_trend: trend.map((x) => ({

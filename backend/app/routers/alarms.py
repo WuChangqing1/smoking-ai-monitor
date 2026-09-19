@@ -18,7 +18,7 @@ from app.services.models import (
     event_type_text,
 )
 from app.services.simulation import get_engine
-from app.services.video_detection import evidence_image_for
+from app.services.video_detection import evidence_image_for, snapshot_image
 
 router = APIRouter(prefix="/api", tags=["alarms"])
 
@@ -157,7 +157,7 @@ def alarm_detail(event_id: str) -> AlarmDetailOut:
         baseline_distance=record.baseline_distance,
         # 当时监控画面：主监控点静态帧（视频就绪后为同一路径）
         # 用相对路径，使前端在根路径或任意子路径下部署都能正确解析
-        snapshot="images/main-monitor-fallback.png",
+        snapshot=snapshot_image(),
         # 异常证据图：视觉模型检测到异常区域后生成的带框截图，
         # 供现场人员复核；无对应证据图的异常类型返回 None
         evidence_image=evidence,
