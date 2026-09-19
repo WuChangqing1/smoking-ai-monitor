@@ -427,10 +427,7 @@ export default function OverviewPage({
               <p className="overview__fusion-reason">{realtime.fusion.reason}</p>
             </>
           ) : (
-            <EmptyState
-              title="雷达 + 视觉联合判断"
-              description="传感器负责高频快速感知，视觉负责复杂语义判断，AI 完成融合决策。"
-            />
+            <EmptyState title="雷达 + 视觉联合判断" description="暂无实时数据" />
           )}
         </Panel>
 

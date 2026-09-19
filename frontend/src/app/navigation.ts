@@ -34,8 +34,8 @@ export interface NavItem {
   icon: IconComponent
   /** 分组标题，用于导航分区 */
   group: '实时监控' | '分析与处置' | '系统'
-  /** 页面副标题 */
-  subtitle: string
+  /** 页面副标题（可选；不写则不显示） */
+  subtitle?: string
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -58,7 +58,6 @@ export const NAV_ITEMS: NavItem[] = [
     label: '雷视联动',
     icon: IconRadar,
     group: '实时监控',
-    subtitle: '雷达与视觉互补融合判断',
   },
   {
     id: 'alarms',

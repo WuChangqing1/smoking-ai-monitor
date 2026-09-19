@@ -59,12 +59,7 @@ export default function TopBar({ status, offline, onOpenSettings }: TopBarProps)
     <header className="topbar">
       <div className="topbar__brand">
         <span className="topbar__mark" aria-hidden="true" />
-        <div className="topbar__titles">
-          <h1 className="topbar__title">烟厂制丝线物流智能监控平台</h1>
-          <p className="topbar__subtitle">
-            视觉识别 + 激光雷达多模态融合 · 提前预警与异常溯源
-          </p>
-        </div>
+        <h1 className="topbar__title">烟厂制丝线物流智能监控平台</h1>
       </div>
 
       <div className="topbar__status">

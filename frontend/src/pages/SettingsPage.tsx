@@ -275,7 +275,6 @@ export default function SettingsPage({
       <Panel
         title="设备台账"
         icon={<IconDevice size={14} />}
-        description="硬件参数取自项目验收报告，平台数据按同一口径产生"
         flush
       >
         <div className="settings__table-wrap">

@@ -32,10 +32,6 @@
   flex-shrink: 0;
 }
 
-.topbar__titles {
-  min-width: 0;
-}
-
 .topbar__title {
   font-size: 17px;
   font-weight: 600;
@@ -44,15 +40,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.topbar__subtitle {
-  font-size: var(--fs-xs);
-  color: var(--c-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 1px;
 }
 
 /* ---- 运行状态胶囊 ---- */
@@ -185,12 +172,6 @@ button.topbar__tag--warn:hover {
 }
 
 /* ---- 窄屏收敛 ---- */
-@media (max-width: 1500px) {
-  .topbar__subtitle {
-    display: none;
-  }
-}
-
 @media (max-width: 1240px) {
   .status-pill__label {
     display: none;

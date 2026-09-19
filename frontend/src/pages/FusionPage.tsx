@@ -65,10 +65,7 @@ export default function FusionPage({ realtime, realtimeError }: FusionPageProps)
         <EmptyState
           tone={realtimeError ? 'critical' : 'idle'}
           title={realtimeError ? '实时数据不可用' : '正在获取实时数据'}
-          description={
-            realtimeError ??
-            '雷达与视觉数据来自同一时刻的采样点，两路数据严格对齐。'
-          }
+          description={realtimeError ?? undefined}
         />
       </Panel>
     )
@@ -109,7 +106,6 @@ export default function FusionPage({ realtime, realtimeError }: FusionPageProps)
         <Panel
           title="雷达分析"
           icon={<IconRadar size={14} />}
-          description="激光雷达 · 高频几何量测量"
           tone={distanceLow ? 'warning' : 'default'}
           extra={
             <Badge tone={radar.online && radar.data_fresh ? 'normal' : 'idle'} dot>
@@ -193,7 +189,6 @@ export default function FusionPage({ realtime, realtimeError }: FusionPageProps)
           <Panel
             title="视觉 AI"
             icon={<IconPerson size={14} />}
-            description="形态与语义判断"
             extra={
               <Badge tone={vision.online ? 'normal' : 'idle'} dot>
                 {vision.online ? '在线' : '离线'}
