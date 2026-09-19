@@ -19,7 +19,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import alarms, control, knowledge, prediction, realtime, system, video_sync
+from app.routers import (
+    ai,
+    alarms,
+    control,
+    knowledge,
+    prediction,
+    realtime,
+    system,
+    video_sync,
+)
 from app.services.knowledge import get_knowledge_base
 from app.services.simulation import get_engine
 from app.services.ticker import ticker
@@ -85,6 +94,7 @@ app.include_router(alarms.router)
 app.include_router(prediction.router)
 app.include_router(knowledge.router)
 app.include_router(video_sync.router)
+app.include_router(ai.router)
 
 
 @app.get("/api/health", tags=["system"], summary="健康检查")

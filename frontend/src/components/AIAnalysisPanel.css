@@ -1,0 +1,136 @@
+/* ==========================================================================
+   AI 辅助分析
+   与现有工业风一致：白色底、细边框、不引入新的视觉语言
+   ========================================================================== */
+
+.ai-analysis {
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+}
+
+.ai-analysis__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-2);
+  margin-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.ai-analysis__title {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.ai-analysis__head-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+/* 只显示模型名 —— 不显示 Base URL 等连接信息 */
+.ai-analysis__model {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-analysis__refresh {
+  padding: 3px 10px;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.ai-analysis__refresh:hover:not(:disabled) {
+  border-color: var(--c-primary);
+  color: var(--c-primary-dark);
+}
+
+.ai-analysis__refresh:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ai-analysis__hint {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  line-height: 1.7;
+}
+
+.ai-analysis__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.ai-analysis__summary {
+  font-size: var(--fs-md);
+  color: var(--c-text);
+  line-height: 1.8;
+}
+
+/* 模型输出无法解析为 JSON 时的纯文本兜底 */
+.ai-analysis__fallback {
+  padding: var(--sp-2) var(--sp-3);
+  border-left: 3px solid var(--c-border);
+  background: var(--c-surface-alt);
+  border-radius: var(--r-xs);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.ai-analysis__group-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-text-sub);
+  margin-bottom: 5px;
+}
+
+.ai-analysis__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-analysis__list li {
+  position: relative;
+  padding-left: 14px;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.7;
+}
+
+.ai-analysis__list li::before {
+  content: '·';
+  position: absolute;
+  left: 3px;
+  color: var(--c-text-muted);
+}
+
+.ai-analysis__meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-top: var(--sp-2);
+  border-top: 1px dashed var(--c-border);
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}

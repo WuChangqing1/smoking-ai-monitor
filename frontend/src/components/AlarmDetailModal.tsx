@@ -2,18 +2,25 @@
  * 报警详情弹层。
  *
  * 内容对应原系统的"异常分析窗口"：
- *   事件基本信息 + 异常证据图 + 当时监控画面 + 雷达趋势 + AI 判断 + 处理过程
+ *   事件基本信息 + 异常证据图 + 当时监控画面 + 雷达趋势 + AI 判断
+ *   + AI 辅助分析 + 处理过程
  *
  * 数据来自 GET /api/alarms/{id}，弹层本身不计算任何业务结论。
+ *
+ * AI 辅助分析走 GET /api/ai/analysis/event/{id}：
+ * 后端检索历史知识库 Top-3 组成上下文再交给模型；
+ * 模型不可用时只显示提示，不影响详情其它内容。
  */
 
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Modal from './Modal'
 import Chart from './Chart'
+import AIAnalysisPanel from './AIAnalysisPanel'
 import { radarDistanceOption } from './chartOptions'
 import { Badge, EmptyState, MetricList, MetricRow, SectionTitle, Skeleton } from './Badge'
 import { IconAlarm, IconInfo } from './icons'
-import type { AlarmDetail, AlarmLevel } from '../types'
+import { api } from '../api/client'
+import type { AIAnalysis, AlarmDetail, AlarmLevel } from '../types'
 import './AlarmDetail.css'
 
 interface AlarmDetailModalProps {
@@ -45,6 +52,57 @@ export default function AlarmDetailModal({
     () => radarDistanceOption(detail?.radar_trend ?? [], detail?.radar_value ?? null),
     [detail?.radar_trend, detail?.radar_value],
   )
+
+  /* ---- AI 辅助分析：只在弹层打开且有事件编号时请求一次 ---- */
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiRefreshing, setAiRefreshing] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
+
+  const eventId = detail?.id ?? null
+
+  useEffect(() => {
+    if (!open || !eventId) {
+      setAiAnalysis(null)
+      setAiError(null)
+      return
+    }
+    let cancelled = false
+    setAiLoading(true)
+    setAiError(null)
+    api
+      .aiEventAnalysis(eventId)
+      .then((result) => {
+        if (!cancelled) setAiAnalysis(result)
+      })
+      .catch(() => {
+        /* 模型侧问题不影响详情其它内容，只在 AI 区块提示 */
+        if (!cancelled) setAiError('AI 分析暂不可用')
+      })
+      .finally(() => {
+        if (!cancelled) setAiLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [open, eventId])
+
+  /**
+   * 重新分析需要管理员令牌（防止公网匿名消耗模型 Token）。
+   * 令牌由用户临时输入，只存在组件内存里，不做任何持久化。
+   */
+  const handleRefreshAI = useCallback(() => {
+    if (!eventId) return
+    const token = window.prompt('重新分析需要管理员令牌，请输入：') ?? ''
+    if (!token.trim()) return
+    setAiRefreshing(true)
+    setAiError(null)
+    api
+      .aiRefreshEventAnalysis(eventId, token)
+      .then((result) => setAiAnalysis(result))
+      .catch(() => setAiError('重新分析失败，请确认管理员令牌是否正确'))
+      .finally(() => setAiRefreshing(false))
+  }, [eventId])
 
   return (
     <Modal
@@ -210,6 +268,29 @@ export default function AlarmDetailModal({
               <IconInfo size={12} />
               {detail.ai_analysis.note}
             </p>
+          </section>
+
+          {/* ---------- AI 辅助分析 ----------
+              位置在「证据图 / 雷达视觉证据」之后、「处理结果」之前：
+              先看事实，再看模型给出的解释与建议。
+              模型不可用时这里只显示提示，不影响其它区块。 */}
+          <section className="alarm-detail__section">
+            <SectionTitle
+              extra={
+                aiAnalysis?.source === 'llm' ? (
+                  <Badge tone="info">知识增强分析</Badge>
+                ) : undefined
+              }
+            >
+              AI 辅助分析
+            </SectionTitle>
+            <AIAnalysisPanel
+              analysis={aiAnalysis}
+              loading={aiLoading}
+              error={aiError}
+              onRefresh={handleRefreshAI}
+              refreshing={aiRefreshing}
+            />
           </section>
 
           {/* ---------- 处理过程 ---------- */}

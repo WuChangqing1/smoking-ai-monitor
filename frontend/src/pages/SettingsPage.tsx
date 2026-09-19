@@ -11,6 +11,7 @@
 
 import { useState } from 'react'
 import Panel from '../components/Panel'
+import AIModelCard from './AIModelCard'
 import { Badge, MetricList, MetricRow, SectionTitle } from '../components/Badge'
 import { IconDevice, IconInfo, IconPlay, IconReset, IconSettings, IconStop } from '../components/icons'
 import { api } from '../api/client'
@@ -175,6 +176,9 @@ export default function SettingsPage({
             </li>
           </ul>
         </Panel>
+
+        {/* ---- AI 模型服务 ---- */}
+        <AIModelCard />
 
         {/* ---- 平台信息 ---- */}
         <Panel title="平台信息" icon={<IconInfo size={14} />}>

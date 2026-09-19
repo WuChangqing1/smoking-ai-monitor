@@ -12,9 +12,10 @@
  * 数据来自 GET /api/prediction（约 3 s 轮询），所有结论由后端计算。
  */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Panel from '../components/Panel'
 import Chart from '../components/Chart'
+import AIAnalysisPanel from '../components/AIAnalysisPanel'
 import { forecastOption } from '../components/chartOptions'
 import { Badge, EmptyState, SectionTitle, Skeleton } from '../components/Badge'
 import { IconInfo, IconKnowledge, IconPredict, IconRadar } from '../components/icons'
@@ -22,7 +23,7 @@ import { api } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
 import { useVideoSync } from '../video/VideoSyncContext'
 import { buildSyncedPrediction } from '../video/syncedTelemetry'
-import type { RiskLevel } from '../types'
+import type { AIAnalysis, RiskLevel } from '../types'
 import './PredictionPage.css'
 
 const LEVEL_TONE: Record<RiskLevel, 'normal' | 'info' | 'warning' | 'critical'> = {
@@ -73,6 +74,46 @@ export default function PredictionPage() {
     : polled
 
   const data = prediction.data
+
+  /**
+   * 当前分析阶段：由风险等级映射。
+   *
+   * 只有 warning / alarm 才请求 AI 分析 —— normal / attention 一律不发请求，
+   * 否则前端轮询会把模型 Token 烧光。
+   */
+  const currentLevel = data?.forecast.level ?? 'low'
+  const analyzableStage: 'warning' | 'alarm' | null =
+    currentLevel === 'high' ? 'warning' : currentLevel === 'critical' ? 'alarm' : null
+
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!analyzableStage) {
+      // 非预警阶段：清掉旧结果，不请求模型
+      setAiAnalysis(null)
+      setAiError(null)
+      return
+    }
+    let cancelled = false
+    setAiLoading(true)
+    setAiError(null)
+    api
+      .aiCurrentAnalysis(analyzableStage)
+      .then((result) => {
+        if (!cancelled) setAiAnalysis(result)
+      })
+      .catch(() => {
+        if (!cancelled) setAiError('AI 分析暂不可用')
+      })
+      .finally(() => {
+        if (!cancelled) setAiLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [analyzableStage])
 
   const chartOption = useMemo(
     () => forecastOption(data?.curve ?? [], data?.forecast.level ?? 'low'),
@@ -251,6 +292,23 @@ export default function PredictionPage() {
           )}
         </Panel>
       </div>
+      {/* ================= AI 辅助分析 =================
+          只在预警 / 报警阶段出现；正常与关注阶段不请求模型。
+          同一阶段重复进入会复用后端缓存，不会重复消耗 Token。 */}
+      {analyzableStage && (
+        <Panel
+          title="AI 辅助分析"
+          icon={<IconInfo size={14} />}
+          description="结合历史异常知识库生成，仅供参考"
+        >
+          <AIAnalysisPanel
+            analysis={aiAnalysis}
+            loading={aiLoading}
+            error={aiError}
+            title={analyzableStage === 'alarm' ? '报警辅助分析' : '预警辅助分析'}
+          />
+        </Panel>
+      )}
     </div>
   )
 }

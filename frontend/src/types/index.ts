@@ -418,3 +418,104 @@ export interface Paged<T> {
   page_size: number
   items: T[]
 }
+
+/* ==========================================================================
+   AI 模型服务（辅助分析）
+   ========================================================================== */
+
+/** 服务类型：本地 llama.cpp 或任意 OpenAI 兼容端点 */
+export type AIProvider = 'llama_cpp' | 'openai_compatible'
+
+/** 可选服务类型 GET /api/ai/providers（仅用于预填 Base URL） */
+export interface AIProviderOption {
+  value: AIProvider
+  label: string
+  default_base_url: string
+  hint: string
+}
+
+/**
+ * AI 配置 GET /api/ai/settings
+ *
+ * **不含完整 API Key** —— 只有是否已配置与末 4 位掩码。
+ */
+export interface AISettings {
+  provider: AIProvider
+  enabled: boolean
+  base_url: string
+  model: string
+  temperature: number
+  max_tokens: number
+  timeout: number
+  api_key_configured: boolean
+  masked_api_key: string
+  updated_at: string
+}
+
+/** 更新 AI 配置 PUT /api/ai/settings（需管理员令牌） */
+export interface AISettingsUpdate {
+  provider?: AIProvider
+  enabled?: boolean
+  base_url?: string
+  model?: string
+  /** 传空串表示清除已保存的 Key；不传表示保持不变 */
+  api_key?: string
+  temperature?: number
+  max_tokens?: number
+  timeout?: number
+}
+
+/** 连接测试 POST /api/ai/test（需管理员令牌） */
+export interface AITestResult {
+  ok: boolean
+  error: string | null
+  models: string[]
+  model: string
+}
+
+/** 模型服务状态 GET /api/ai/status */
+export interface AIStatus {
+  enabled: boolean
+  configured: boolean
+  provider: string
+  model: string
+  reachable: boolean | null
+  last_error: string | null
+  analyzable_stages: string[]
+  top_k: number
+}
+
+/**
+ * AI 辅助分析结果。
+ *
+ * ``source`` 明确区分 ``llm``（真实模型输出）与 ``fallback``（降级）——
+ * 页面据此绝不把降级内容当作模型结论展示。
+ */
+export interface AIAnalysis {
+  status: 'ok' | 'disabled' | 'unavailable'
+  source: 'llm' | 'fallback'
+  analysis_type: string
+  analysis_type_text: string
+  provider: string
+  model: string
+  summary: string
+  possible_causes: string[]
+  recommended_checks: string[]
+  recommended_actions: string[]
+  related_cases: string[]
+  evidence_basis: string[]
+  /** 模型输出不是合法 JSON 时，原文保留在这里按纯文本展示 */
+  fallback_text: string
+  structured: boolean
+  generated_at: string
+  cached: boolean
+  error_message: string | null
+}
+
+/** 分析能力元信息 GET /api/ai/analysis/meta */
+export interface AIAnalysisMeta {
+  analyzable_stages: string[]
+  top_k: number
+  analysis_type_text: Record<string, string>
+  stage: string
+}

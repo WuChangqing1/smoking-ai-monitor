@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -26,6 +27,20 @@ TEST_SEED = 20250519
 @pytest.fixture(scope="session")
 def client() -> TestClient:
     return TestClient(app)
+
+
+#: 测试用临时目录放在仓库内。
+#:
+#: 不用 pytest 的 tmp_path —— 受限环境里可能拿不到系统临时目录的权限。
+#: 该目录已被 .gitignore 的 ``.tmp-*/`` 规则覆盖。
+_TMP_ROOT = Path(__file__).resolve().parent / ".tmp-ai"
+
+
+@pytest.fixture
+def workdir() -> Path:
+    """项目内的临时工作目录（存放测试用 SQLite 等）。"""
+    _TMP_ROOT.mkdir(parents=True, exist_ok=True)
+    return _TMP_ROOT
 
 
 @pytest.fixture(autouse=True)

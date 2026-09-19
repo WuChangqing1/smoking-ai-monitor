@@ -403,3 +403,105 @@ class ActionResponse(BaseModel):
     ok: bool
     message: str
     sim_state: SimStateT | None = None
+
+
+# ---- AI 模型服务 ------------------------------------------------------------
+#
+# 注意：公开的配置视图里**没有完整 api_key**，
+# 只有 api_key_configured 与 masked_api_key。
+
+ProviderT = Literal["llama_cpp", "openai_compatible"]
+
+
+class AIProviderOptionOut(BaseModel):
+    """可选服务类型 + 默认 Base URL（仅用于前端预填）。"""
+
+    value: ProviderT
+    label: str
+    default_base_url: str
+    hint: str
+
+
+class AISettingsOut(BaseModel):
+    """AI 配置的脱敏视图。"""
+
+    provider: ProviderT
+    enabled: bool
+    base_url: str
+    model: str
+    temperature: float
+    max_tokens: int
+    timeout: float
+    #: 是否已配置 API Key（**不返回 Key 本身**）
+    api_key_configured: bool
+    #: 掩码形式，例如 ****abcd
+    masked_api_key: str = ""
+    updated_at: str = ""
+
+
+class AISettingsUpdateIn(BaseModel):
+    """更新配置。未提供的字段保持不变；``api_key`` 传空串表示清除。"""
+
+    provider: ProviderT | None = None
+    enabled: bool | None = None
+    base_url: str | None = None
+    model: str | None = None
+    api_key: str | None = None
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+    max_tokens: int | None = Field(default=None, ge=64, le=8192)
+    timeout: float | None = Field(default=None, ge=3.0, le=120.0)
+
+
+class AITestIn(BaseModel):
+    """连接测试。可带未保存的临时配置，便于"先试再存"。"""
+
+    provider: ProviderT | None = None
+    base_url: str | None = None
+    model: str | None = None
+    api_key: str | None = None
+    timeout: float | None = Field(default=None, ge=3.0, le=120.0)
+
+
+class AITestOut(BaseModel):
+    ok: bool
+    error: str | None = None
+    models: list[str] = Field(default_factory=list)
+    model: str = ""
+
+
+class AIStatusOut(BaseModel):
+    enabled: bool
+    configured: bool
+    provider: str
+    model: str
+    reachable: bool | None = None
+    last_error: str | None = None
+    analyzable_stages: list[str] = Field(default_factory=list)
+    top_k: int = 3
+
+
+class AIAnalysisOut(BaseModel):
+    """AI 辅助分析结果。
+
+    ``source`` 明确区分 ``llm``（真实模型输出）与 ``fallback``（降级），
+    页面据此绝不把降级内容伪装成模型结论。
+    """
+
+    status: Literal["ok", "disabled", "unavailable"]
+    source: Literal["llm", "fallback"]
+    analysis_type: str
+    analysis_type_text: str = ""
+    provider: str = ""
+    model: str = ""
+    summary: str = ""
+    possible_causes: list[str] = Field(default_factory=list)
+    recommended_checks: list[str] = Field(default_factory=list)
+    recommended_actions: list[str] = Field(default_factory=list)
+    related_cases: list[str] = Field(default_factory=list)
+    evidence_basis: list[str] = Field(default_factory=list)
+    #: 模型输出无法解析为 JSON 时，原样保留供纯文本展示
+    fallback_text: str = ""
+    structured: bool = False
+    generated_at: str = ""
+    cached: bool = False
+    error_message: str | None = None

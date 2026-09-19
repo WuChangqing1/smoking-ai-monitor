@@ -53,6 +53,18 @@ class Settings:
     #   automatic  —— 平台自动工况循环（开发、测试与逻辑验证）
     run_mode: str = os.getenv("SMOKING_RUN_MODE", "video_sync")
 
+    # AI 配置写接口的管理员令牌。
+    #
+    # 两个站点都有公网入口，模型配置的写接口不能匿名开放 ——
+    # 否则任何人都能改 Base URL / 换 Key / 消耗模型 Token。
+    #
+    # 配置了令牌：写接口必须带 X-AI-Admin-Token 且匹配。
+    # 未配置令牌：仅回环来源（本地开发）可写，公网一律拒绝。
+    #
+    # **该值只能通过环境变量注入，不得写进仓库、不得下发前端。**
+    # 同时也是 AI API Key 静态加密的密钥来源（见 services/ai/crypto.py）。
+    ai_admin_token: str = os.getenv("AI_ADMIN_TOKEN", "")
+
     @property
     def is_video_sync(self) -> bool:
         return self.run_mode == "video_sync"

@@ -9,6 +9,13 @@
  */
 
 import type {
+  AIAnalysis,
+  AIAnalysisMeta,
+  AIProviderOption,
+  AISettings,
+  AISettingsUpdate,
+  AIStatus,
+  AITestResult,
   AlarmDetail,
   AlarmFilterOptions,
   AlarmRecord,
@@ -75,7 +82,13 @@ async function request<T>(path: string, init?: RequestInit & { timeout?: number 
     const resp = await fetch(`${API_BASE}${path}`, {
       ...rest,
       signal: controller.signal,
-      headers: { Accept: 'application/json', ...(rest.headers ?? {}) },
+      headers: {
+        Accept: 'application/json',
+        // 带 body 的请求（AI 配置、连接测试）必须声明 JSON，
+        // 否则 FastAPI 无法解析请求体
+        ...(rest.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(rest.headers ?? {}),
+      },
     })
 
     if (!resp.ok) {
@@ -108,6 +121,18 @@ function toQuery(params: object): string {
   const sp = new URLSearchParams()
   for (const [k, v] of usable) sp.set(k, String(v))
   return `?${sp.toString()}`
+}
+
+/**
+ * 管理员令牌请求头。
+ *
+ * 令牌只从调用方（设置页的内存状态）传入，**不落任何持久化存储** ——
+ * 不进 localStorage / sessionStorage / cookie，也不写日志。
+ * 未提供时不带该头，由后端按来源判定。
+ */
+function adminHeaders(adminToken?: string): Record<string, string> {
+  const token = (adminToken ?? '').trim()
+  return token ? { 'X-AI-Admin-Token': token } : {}
 }
 
 export const api = {
@@ -186,4 +211,58 @@ export const api = {
     request<{ ok: boolean; message: string; sim_state: string }>('/api/simulation/scenario', {
       method: 'POST',
     }),
+
+  /* ---- AI 模型服务 -------------------------------------------------------
+   *
+   * 读取类接口是公开的（响应里不含 API Key）。
+   * 写类接口（改配置 / 连接测试 / 强制重新分析）需要管理员令牌，
+   * 令牌只存在页面内存里，由调用方通过第二个参数传入。
+   */
+
+  /** 可选服务类型与默认 Base URL */
+  aiProviders: () => request<AIProviderOption[]>('/api/ai/providers'),
+
+  /** 读取 AI 配置（脱敏） */
+  aiSettings: () => request<AISettings>('/api/ai/settings'),
+
+  /** 更新 AI 配置（需管理员令牌） */
+  aiSaveSettings: (payload: AISettingsUpdate, adminToken?: string) =>
+    request<AISettings>('/api/ai/settings', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+      headers: adminHeaders(adminToken),
+      timeout: 15000,
+    }),
+
+  /** 连接测试（需管理员令牌）。真实请求模型服务，不做假测试。 */
+  aiTest: (payload: AISettingsUpdate, adminToken?: string) =>
+    request<AITestResult>('/api/ai/test', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: adminHeaders(adminToken),
+      timeout: 40000,
+    }),
+
+  /** 模型服务状态 */
+  aiStatus: () => request<AIStatus>('/api/ai/status'),
+
+  /** 分析能力元信息（阶段限制与 Top-K） */
+  aiAnalysisMeta: () => request<AIAnalysisMeta>('/api/ai/analysis/meta'),
+
+  /** 当前阶段（warning / alarm）的辅助分析 */
+  aiCurrentAnalysis: (type: 'warning' | 'alarm') =>
+    request<AIAnalysis>(`/api/ai/analysis/current${toQuery({ type })}`, { timeout: 60000 }),
+
+  /** 历史事件的辅助分析 */
+  aiEventAnalysis: (eventId: string) =>
+    request<AIAnalysis>(`/api/ai/analysis/event/${encodeURIComponent(eventId)}`, {
+      timeout: 60000,
+    }),
+
+  /** 强制重新分析（需管理员令牌） */
+  aiRefreshEventAnalysis: (eventId: string, adminToken?: string) =>
+    request<AIAnalysis>(
+      `/api/ai/analysis/event/${encodeURIComponent(eventId)}/refresh`,
+      { method: 'POST', headers: adminHeaders(adminToken), timeout: 60000 },
+    ),
 }
