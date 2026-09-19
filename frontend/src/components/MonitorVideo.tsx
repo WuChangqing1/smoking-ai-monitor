@@ -36,7 +36,7 @@ export const MONITOR_VIDEO_PATH = 'videos/main-monitor.mp4'
  *
  * 查询串对 Nginx 静态文件服务无影响（只按路径匹配 $uri）。
  */
-export const MONITOR_VIDEO_VERSION = 2
+export const MONITOR_VIDEO_VERSION = 3
 
 /** 实际请求地址：带版本参数，避免浏览器复用旧缓存 */
 export const MONITOR_VIDEO_SRC = `${MONITOR_VIDEO_PATH}?v=${MONITOR_VIDEO_VERSION}`
@@ -97,6 +97,13 @@ interface MonitorVideoProps {
    * 其余点位只做画面循环展示，用默认的 1× 即可。
    */
   rate?: number
+  /**
+   * 画面右下角的机位标识，例如 "Camera 01"。
+   *
+   * 视频素材本身不再带机位水印（已去除），因此由前端叠加。
+   * 传空字符串则不显示。
+   */
+  cameraLabel?: string
 }
 
 type Mode = 'probing' | 'video' | 'fallback' | 'none'
@@ -112,6 +119,7 @@ export default function MonitorVideo({
   showDetection = false,
   videoSrc = MONITOR_VIDEO_SRC,
   rate = VIDEO_PLAYBACK_RATE,
+  cameraLabel = '',
 }: MonitorVideoProps) {
   const [mode, setMode] = useState<Mode>(hasStream ? 'probing' : 'none')
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -271,10 +279,14 @@ export default function MonitorVideo({
       {visible !== 'none' && <DetectionOverlay box={detectionBox} />}
 
       {/* ---- 轻量叠加信息，不堆遮罩 ----
-           不再叠加机位标识文字：监控视频画面里本来就带 "Camera 01" 水印，
-           再叠一层会与之重复（用户明确要求去掉）。 */}
+           机位标识放在右下角：视频素材已去除自带的机位水印，因此由前端叠加，
+           样式与原来的水印接近（小、半透明底色），normal 阶段也始终可见。 */}
       {showTimestamp && visible !== 'none' && (
         <span className="monitor-video__timestamp">{timestamp ?? '----年--月--日 --:--:--'}</span>
+      )}
+
+      {visible !== 'none' && cameraLabel && (
+        <span className="monitor-video__camera">{cameraLabel}</span>
       )}
 
       {mode === 'fallback' && <span className="monitor-video__notice">静态监控画面</span>}

@@ -1307,4 +1307,61 @@ YOLO 异常检测框、静态图回退提示均不受影响。
 | 双入口 | 主入口与 `/smoking/` 均 200 |
 | 已有站点回归 | fitness(80) 200 |
 
+**Commit**：`5fcef712669056ecf169127d49fd47ec66e893ac`
+（`fix: remove explanatory copy from the monitoring UI` → 已推送）
+
+---
+
+## 轮次 24 — 主监控视频替换为最终版，机位标识改由前端叠加
+
+**背景**：用户提供 `Video_Final.mp4`（去掉了视频自带的 "Camera 01" 水印），
+要求替换主监控画面；同时因为画面里没有机位标识了，
+**需要前端在画面右下角叠加 "Camera 01" 之类的机位标识**。
+
+**新旧视频对比**
+
+| 项 | 旧（去四角星水印版） | 新 `Video_Final.mp4` |
+|---|---|---|
+| 编码 / 分辨率 / 帧率 | H.264 / 1280×720 / 24 fps | 同 |
+| 时长 / 帧数 | 10.000 s / 240 | 同 |
+| 大小 | 5,441,230 B（4.35 Mbps） | 5,842,309 B（4.67 Mbps） |
+| 机位水印 | 右下角有 "Camera 01" | **已去除** |
+
+逐像素比对：差异仅 0.24%~0.33%，**全部位于画面最底部 Y[691..719]**，
+即机位水印所在行。**物料带与检测框区域完全未变，检测框坐标无需调整**。
+
+**改动**
+
+| 文件 | 改动 |
+|---|---|
+| `frontend/public/videos/main-monitor.mp4` | 替换为最终版（哈希一致） |
+| `MonitorVideo.tsx` | 恢复 `cameraLabel` 属性与右下角叠加渲染；`MONITOR_VIDEO_VERSION` 2 → **3** |
+| `MonitorVideo.css` | 恢复 `.monitor-video__camera`（右下角）；回退提示上移至 `bottom: 38px` 避免重叠 |
+| `OverviewPage` / `FusionPage` / `VideoPage` | 四处调用点传入 `cameraLabel`（Camera 01~04 全部覆盖） |
+| `frontend/public/images/evidence/*.jpg` | **重新生成**：证据图取自视频文件，必须跟着换 |
+| `scripts/generate_evidence.py` | 证据图也叠加右下角机位标识，与网页保持一致 |
+
+**为什么证据图要一起改**：证据图是从主监控视频截帧生成的，
+视频换了就必须重做；同时网页上有机位标识而证据图上没有会造成图文不一致，
+因此生成脚本里也补上了同一位置的标识。
+
+**验证**
+
+| 检查项 | 结果 |
+|---|---|
+| 后端 pytest | **220 passed** |
+| 前端 tsc + vite build | 通过（632 模块，无警告） |
+| 产物复查 | `monitor-video__camera`×1、`cameraLabel`×5、`detection-overlay`×3 都在 |
+| 主视频版本号 | 产物中为 `videos/main-monitor.mp4?v=3` |
+| 公网主视频 | 200 / `video/mp4` / **5842309 字节** |
+| 公网证据图 | 两张均 200 / `image/jpeg`（147235 / 148293 字节，已重新生成） |
+| 其余三段视频 | 尺寸与替换前一致，未被触碰 |
+| Range 请求 | 主视频 `bytes=0-1023` → **206**，`Content-Range` 正确 |
+| 缓存策略 | `public, max-age=300`，单一 `Accept-Ranges` |
+| 双入口 | 主入口与 `/smoking/` 下四段视频均 200 |
+| 平台功能 | `/api/realtime`、`/api/alarms`、`/api/knowledge`、检测框接口均 200 |
+| 已有站点回归 | fitness(80) 200 |
+
+**新增**：`scripts/replace-main-video.sh`（只替换主监控素材，不触碰其它机位）。
+
 **Commit**：`待填`

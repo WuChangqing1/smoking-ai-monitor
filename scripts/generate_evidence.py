@@ -108,8 +108,16 @@ def build_filter(
     label: str,
     font: str | None,
     width: int,
+    height: int,
+    camera_label: str = "",
 ) -> str:
-    """构造 drawbox + drawtext 滤镜串（YOLO 风格：粗框 + 左上角标签）。"""
+    """构造 drawbox + drawtext 滤镜串。
+
+    包含两部分：
+      * YOLO 风格检测框 + 左上角类别标签
+      * 画面右下角机位标识（视频素材本身已不含水印，由这里叠加，
+        与网页上的叠加层保持一致）
+    """
     # 边框线宽按画面宽度等比，保证不同分辨率下观感一致
     thickness = max(3, round(width * 0.0025))
     # 标签字号同样等比
@@ -134,6 +142,25 @@ def build_filter(
                 pad=max(4, round(font_size * 0.3)),
             )
         )
+
+        # 机位标识：右下角，半透明深色底 + 白字，与网页叠加层观感一致
+        if camera_label:
+            cam_size = max(18, round(width * 0.019))
+            margin_x = round(width * 0.009)
+            margin_y = round(height * 0.014)
+            parts.append(
+                "drawtext=fontfile='{font}':text='{text}':x=w-tw-{mx}:y=h-th-{my}"
+                ":fontsize={size}:fontcolor=#f2f6f7:box=1"
+                ":boxcolor=0x10181b@0.55:boxborderw={pad}".format(
+                    font=escape_path_for_filter(font),
+                    text=camera_label.replace(":", r"\:").replace("'", ""),
+                    mx=margin_x,
+                    my=margin_y,
+                    size=cam_size,
+                    pad=max(4, round(cam_size * 0.28)),
+                )
+            )
+
     return ",".join(parts)
 
 
@@ -151,9 +178,12 @@ def generate_one(
     color: str,
     label: str,
     frame_width: int,
+    frame_height: int,
+    camera_label: str = "",
 ) -> None:
     vf = build_filter(
-        x=x, y=y, w=w, h=h, color=color, label=label, font=font, width=frame_width
+        x=x, y=y, w=w, h=h, color=color, label=label, font=font,
+        width=frame_width, height=frame_height, camera_label=camera_label,
     )
     cmd = [
         ffmpeg,
@@ -250,6 +280,7 @@ def main() -> int:
     print(f"  视频源: {video_path}")
     print(f"  ffmpeg: {ffmpeg}")
     print(f"  字体  : {font or '未找到中文字体，标签将只显示数值'}")
+    print(f"  机位标识: {cfg.camera_id}（右下角）")
     print()
 
     for target in targets:
@@ -265,6 +296,9 @@ def main() -> int:
             color=target["color"],
             label=label,
             frame_width=FRAME_W,
+            frame_height=FRAME_H,
+            # 与网页一致：右下角叠加机位标识
+            camera_label=cfg.camera_id.replace("CAM-", "Camera "),
         )
 
     print()

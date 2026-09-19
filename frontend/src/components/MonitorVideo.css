@@ -43,10 +43,9 @@
   }
 }
 
-/* ---- 叠加信息：小、半透明、不遮挡主体 ----
-   已移除 .monitor-video__camera（机位标识）：视频画面自带 "Camera 01" 水印，
-   UI 再叠一层属于重复信息。 */
+/* ---- 叠加信息：小、半透明、不遮挡主体 ---- */
 .monitor-video__timestamp,
+.monitor-video__camera,
 .monitor-video__notice {
   position: absolute;
   font-family: var(--font-mono);
@@ -65,10 +64,18 @@
   left: 10px;
 }
 
-/* 回退提示放右下角 */
+/* 机位标识：视频素材已去除自带水印，这里在右下角叠加，
+   位置与观感对齐原来的机位水印 */
+.monitor-video__camera {
+  right: 12px;
+  bottom: 10px;
+  font-weight: 600;
+}
+
+/* 回退提示：放在机位标识上方，避免两者重叠 */
 .monitor-video__notice {
   right: 10px;
-  bottom: 9px;
+  bottom: 38px;
   background: rgba(217, 119, 6, 0.86);
   font-family: var(--font-sans);
 }
