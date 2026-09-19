@@ -81,6 +81,12 @@ backend/data/*.db
 # 曾经只写了 .tmp-frames/，导致后建的 .tmp-v2/ 抽帧图被误提交。
 .tmp-*/
 
+# ---- 视频素材与素材加工产物 ----
+# 交付/加工过程中的临时图片（如去水印前后的对照图）不入库，
+# 避免 git status 长期显示未跟踪文件。
+无Camera版*.png
+无Camera版*.jpg
+
 # ---- Logs / runtime ----
 logs/
 *.log
