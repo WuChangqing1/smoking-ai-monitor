@@ -173,9 +173,6 @@ export default function SettingsPage({
               <strong>复位运行状态</strong>：工况回到正常态并重新预热数据窗口，
               用于检修或交接班前的状态复位。
             </li>
-            <li>
-              页面按钮<strong>不会</strong>、也<strong>不应该</strong>被理解为可以关闭真实生产设备。
-            </li>
           </ul>
         </Panel>
 
@@ -310,7 +307,7 @@ export default function SettingsPage({
             <tbody>
               <tr>
                 <td>激光雷达</td>
-                <td>重邮自研（重庆邮电大学）</td>
+                <td>XX 大学自研</td>
                 <td className="mono">3 台</td>
                 <td>测距 0.1–40 m · 精度 ±5 cm · 刷新率最高 1000 Hz · IP65</td>
               </tr>

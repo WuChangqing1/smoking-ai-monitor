@@ -86,7 +86,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: '知识库',
     icon: IconKnowledge,
     group: '分析与处置',
-    subtitle: '历史异常处理经验库',
+    subtitle: '历史异常事件与处理记录',
   },
   {
     id: 'settings',

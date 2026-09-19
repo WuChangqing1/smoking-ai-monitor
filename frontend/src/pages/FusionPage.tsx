@@ -18,7 +18,6 @@ import { radarDistanceOption, riskTrendOption } from '../components/chartOptions
 import { Badge, EmptyState, MetricList, MetricRow, SectionTitle } from '../components/Badge'
 import {
   IconChart,
-  IconInfo,
   IconPerson,
   IconRadar,
   IconVideo,
@@ -186,11 +185,6 @@ export default function FusionPage({ realtime, realtimeError }: FusionPageProps)
                 <dd className="fusion__spec-em">10 Hz</dd>
               </div>
             </dl>
-            <p className="fusion__spec-note">
-              <IconInfo size={12} />
-              设备的最高刷新能力（1000 Hz）与本系统的实际采集频率（10 Hz）不是一回事：
-              平台按 10 Hz 持续采集，已足够覆盖制丝线物料变化的节奏，也避免无谓的存储与算力开销。
-            </p>
           </div>
         </Panel>
 
@@ -245,12 +239,6 @@ export default function FusionPage({ realtime, realtimeError }: FusionPageProps)
                 hint={`基准 ${environment.conveyor_speed_baseline.toFixed(2)} m/s`}
               />
             </MetricList>
-
-            <p className="fusion__probabilistic">
-              <IconInfo size={12} />
-              视觉结果属于概率模型输出，会受光照、遮挡与粉尘影响；
-              它擅长判断"形态像不像堆积"，但单靠它不足以支撑报警决策。
-            </p>
           </Panel>
 
           {/* 联合判定区：本页视觉重点 */}
@@ -329,46 +317,6 @@ export default function FusionPage({ realtime, realtimeError }: FusionPageProps)
           <Chart option={riskOption} height={200} pointCount={samples.length} emptyText="暂无风险数据" />
         </Panel>
       </div>
-
-      {/* ===================== 技术解释 ===================== */}
-      <Panel title="为什么需要融合" icon={<IconInfo size={14} />}>
-        <div className="fusion__compare">
-          <div className="fusion__compare-col">
-            <SectionTitle>视觉 AI</SectionTitle>
-            <p className="fusion__compare-role">负责复杂场景与形态理解</p>
-            <ul className="fusion__compare-list">
-              <li className="is-pro">信息丰富，可识别形态与杂质</li>
-              <li className="is-pro">能做复杂语义判断</li>
-              <li className="is-con">属于概率模型，输出非确定</li>
-              <li className="is-con">受光照、遮挡与粉尘影响</li>
-              <li className="is-con">推理延迟相对更高（当前约 {vision.latency_ms} ms）</li>
-            </ul>
-          </div>
-
-          <div className="fusion__compare-col">
-            <SectionTitle>雷达 / 传感器</SectionTitle>
-            <p className="fusion__compare-role">负责高频、稳定、快速的几何量测量</p>
-            <ul className="fusion__compare-list">
-              <li className="is-pro">测量稳定，不依赖光照</li>
-              <li className="is-pro">精度高（±5 cm），响应速度快</li>
-              <li className="is-pro">可 10 Hz 持续高频采样</li>
-              <li className="is-con">只有几何量，缺乏语义</li>
-              <li className="is-con">无法区分"堆积"与"其他遮挡物"</li>
-            </ul>
-          </div>
-
-          <div className="fusion__compare-col fusion__compare-col--result">
-            <SectionTitle>融合判断</SectionTitle>
-            <p className="fusion__compare-role">减少单一信息源的局限</p>
-            <ul className="fusion__compare-list">
-              <li className="is-pro">雷达先感知几何变化，响应快</li>
-              <li className="is-pro">视觉再确认形态语义，避免误报</li>
-              <li className="is-pro">两者一致时结论更可靠</li>
-              <li className="is-pro">两者分歧时降级为「关注」并说明原因</li>
-            </ul>
-          </div>
-        </div>
-      </Panel>
     </div>
   )
 }
