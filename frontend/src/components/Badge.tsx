@@ -1,7 +1,7 @@
 /**
  * 状态标签 / 圆点 / 通用小组件。
  *
- * 颜色语义严格统一（见 docs/PROJECT_CONTEXT.md 第 8 节）：
+ * 颜色语义严格统一：
  *   绿 = 正常   橙 = 预警/关注   红 = 严重报警   灰 = 停止/离线   蓝灰 = 提示
  */
 
@@ -76,9 +76,15 @@ export function MetricRow({
   )
 }
 
-/** 指标列表容器 */
-export function MetricList({ children }: { children: ReactNode }) {
-  return <div className="metric-list">{children}</div>
+/** 指标列表容器。`className` 可选，便于某个页面改成横向铺开的排布。 */
+export function MetricList({
+  children,
+  className = '',
+}: {
+  children: ReactNode
+  className?: string
+}) {
+  return <div className={`metric-list ${className}`.trim()}>{children}</div>
 }
 
 /** 空状态 / 错误状态占位 */

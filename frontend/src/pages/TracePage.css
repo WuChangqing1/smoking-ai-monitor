@@ -9,8 +9,38 @@
   min-width: 0;
 }
 
-.trace__top {
-  min-width: 0;
+/*
+ * 检索结果汇总：4 项指标横向铺开。
+ *
+ * 只覆盖本页这一处（其它页面的 MetricList 仍是纵向列表）——
+ * 汇总卡整宽后若继续纵向排列，行与行之间会拉出大片空白。
+ */
+.trace__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+/* 横向排布时改为竖向堆叠：标签在上、数值在下 */
+.trace__stats .metric-row {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 0;
+  border-bottom: 0;
+}
+
+.trace__stats .metric-row__value {
+  text-align: left;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+@media (max-width: 1100px) {
+  .trace__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .trace__stale {

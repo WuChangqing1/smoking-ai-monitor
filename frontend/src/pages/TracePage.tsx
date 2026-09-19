@@ -187,27 +187,30 @@ export default function TracePage() {
         </div>
       )}
 
-      {/* ---- 汇总 ---- */}
-      <div className="grid grid--2 trace__top">
-        <Panel title="检索结果汇总" icon={<IconTrace size={14} />} description={`时间跨度 ${stats.span}`}>
-          <MetricList>
-            <MetricRow label="命中记录" value={total} unit="条" />
-            <MetricRow
-              label="严重 / 预警 / 提示"
-              value={`${stats.critical} / ${stats.warning} / ${stats.info}`}
-              tone={stats.critical > 0 ? 'critical' : stats.warning > 0 ? 'warning' : 'normal'}
-            />
-            <MetricRow label="已归档" value={stats.archived} unit="条" />
-            <MetricRow
-              label="最低测距"
-              value={stats.minDistance !== null ? stats.minDistance.toFixed(3) : '—'}
-              unit="m"
-              tone={stats.minDistance !== null && stats.minDistance < 0.6 ? 'critical' : 'idle'}
-              hint="当前页记录中的最小雷达测距，接近 0.58 m 报警阈值即代表发生过堵料"
-            />
-          </MetricList>
-        </Panel>
-      </div>
+      {/* ---- 汇总 ----
+           整宽展示，4 项指标横向铺开 ——
+           原先放在 grid--2 里但只放一张卡，右半边整片空白。 */}
+      <Panel
+        title="检索结果汇总"
+        icon={<IconTrace size={14} />}
+        description={`时间跨度 ${stats.span}`}
+      >
+        <MetricList className="trace__stats">
+          <MetricRow label="命中记录" value={total} unit="条" />
+          <MetricRow
+            label="严重 / 预警 / 提示"
+            value={`${stats.critical} / ${stats.warning} / ${stats.info}`}
+            tone={stats.critical > 0 ? 'critical' : stats.warning > 0 ? 'warning' : 'normal'}
+          />
+          <MetricRow label="已归档" value={stats.archived} unit="条" />
+          <MetricRow
+            label="最低测距"
+            value={stats.minDistance !== null ? stats.minDistance.toFixed(3) : '—'}
+            unit="m"
+            tone={stats.minDistance !== null && stats.minDistance < 0.6 ? 'critical' : 'idle'}
+          />
+        </MetricList>
+      </Panel>
 
       {/* ---- 结果表 ---- */}
       <Panel
