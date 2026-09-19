@@ -177,11 +177,10 @@ export default function SettingsPage({
           </ul>
         </Panel>
 
-        {/* ---- AI 模型服务 ---- */}
-        <AIModelCard />
-
-        {/* ---- 平台信息 ---- */}
-        <Panel title="平台信息" icon={<IconInfo size={14} />}>
+        {/* ---- 平台信息 ----
+            settings__meta 用于就地把指标行压紧一点，
+            使其与同行「检测任务控制」的内容高度接近，避免卡片底部留白 */}
+        <Panel className="settings__meta" title="平台信息" icon={<IconInfo size={14} />}>
           {meta ? (
             <MetricList>
               <MetricRow label="平台名称" value={meta.platform_name} />
@@ -201,6 +200,9 @@ export default function SettingsPage({
             </p>
           )}
         </Panel>
+
+        {/* ---- AI 模型服务（整宽） ---- */}
+        <AIModelCard />
       </div>
 
       {/* ---- 运行模式 ---- */}

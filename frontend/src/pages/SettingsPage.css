@@ -5,15 +5,31 @@
 .settings {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
   min-width: 0;
 }
 
+/*
+ * 卡片按「内容高度相近」配对成行，避免拉伸产生内部空白。
+ *
+ * 曾经的问题：把三张卡片放进一个 2 列网格（1.35fr / 1fr），
+ * 「检测任务控制」和「AI 模型服务」占第一行 —— 前者内容只有约 180px，
+ * 后者约 420px。无论是否让它们等高，都会出问题：
+ *   * align-items: start → 矮卡下方空一大片
+ *   * align-items: stretch → 矮卡被拉到 488px，内部空 241px
+ *
+ * 现在的做法：让「检测任务控制」与「平台信息」配成一行（两者内容量接近），
+ * 「AI 模型服务」单独整宽。这样每行天然等高，不需要拉伸。
+ */
 .settings__layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-  gap: var(--sp-4);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--sp-3);
+}
+
+/* AI 模型服务整宽，内部表单本来就是两列，整宽后正好铺开 */
+.settings__layout > .panel--wide {
+  grid-column: 1 / -1;
 }
 
 /* ---- 按钮 ---- */
@@ -128,6 +144,17 @@
 .settings__muted {
   color: var(--c-text-muted);
   font-size: var(--fs-base);
+}
+
+/*
+ * 平台信息：就地压紧指标行。
+ *
+ * 只影响本页这张卡片（不修改通用的 MetricRow）——
+ * 目的是让它与同一行的「检测任务控制」内容高度接近，
+ * 减少两卡等高后较矮一侧的底部留白。
+ */
+.settings__meta .metric-row {
+  padding: 5px 0;
 }
 
 /* ==========================================================================
