@@ -340,10 +340,6 @@
   background: var(--c-surface-alt);
 }
 
-.settings__cap--planned {
-  border-left-color: var(--c-info);
-}
-
 .settings__cap-title {
   margin-top: 7px;
   font-size: var(--fs-md);

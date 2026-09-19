@@ -252,53 +252,6 @@ export default function PredictionPage() {
           )}
         </Panel>
       </div>
-
-      {/* ================= 扩展能力（规划中，不得伪装成已部署） ================= */}
-      <Panel
-        title="扩展能力与技术路线"
-        icon={<IconInfo size={14} />}
-        description="以下为规划能力，当前版本尚未部署"
-      >
-        <div className="predict__caps">
-          <div className="predict__cap">
-            <Badge tone="info">规划能力</Badge>
-            <p className="predict__cap-title">杂质检测与自动分拣</p>
-            <p className="predict__cap-desc">
-              待摄像头精度与算力提升后，由视觉模型识别杂质并定位，
-              联动机械臂 / 分拣设备将其转移至人工复核线。
-            </p>
-            <ol className="predict__cap-flow">
-              <li>视觉模型识别杂质</li>
-              <li>定位杂质位置</li>
-              <li>机械臂 / 分拣设备动作</li>
-              <li>转移至人工复核线</li>
-            </ol>
-          </div>
-
-          <div className="predict__cap">
-            <Badge tone="info">规划能力</Badge>
-            <p className="predict__cap-title">时序模型升级</p>
-            <p className="predict__cap-desc">
-              引入 LSTM 时序异常预测、移动平均 / 移动标准差统计特征，
-              以及多目标跟踪与场景理解算法，进一步提升提前预警的准确率与提前量。
-            </p>
-          </div>
-
-          <div className="predict__cap">
-            <Badge tone="info">推广方向</Badge>
-            <p className="predict__cap-title">跨行业应用</p>
-            <p className="predict__cap-desc">
-              视觉 + 雷达融合方案不局限于制丝线，可推广至下列连续物料生产线。
-            </p>
-            <ul className="predict__cap-industries">
-              <li>食品加工</li>
-              <li>医药生产</li>
-              <li>化工原料</li>
-              <li>其他连续物料生产线</li>
-            </ul>
-          </div>
-        </div>
-      </Panel>
     </div>
   )
 }

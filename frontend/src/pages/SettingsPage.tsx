@@ -355,8 +355,8 @@ export default function SettingsPage({
         </div>
       </Panel>
 
-      {/* ---- 技术路线与规划能力 ---- */}
-      <Panel title="系统能力与技术路线" icon={<IconInfo size={14} />}>
+      {/* ---- 系统能力 ---- */}
+      <Panel title="系统能力" icon={<IconInfo size={14} />}>
         <SectionTitle>已部署能力</SectionTitle>
         <div className="settings__caps">
           <div className="settings__cap">
@@ -372,9 +372,9 @@ export default function SettingsPage({
             <Badge tone="normal" dot>
               已部署
             </Badge>
-            <p className="settings__cap-title">异常报警与推送</p>
+            <p className="settings__cap-title">异常报警</p>
             <p className="settings__cap-desc">
-              报警内容含设备名称、设备 IP、报警时间与距离信息，原系统经钉钉机器人通知相关人员。
+              报警内容含设备名称、设备 IP、报警时间与距离信息，并附视觉模型生成的异常证据图。
             </p>
           </div>
           <div className="settings__cap">
@@ -384,32 +384,6 @@ export default function SettingsPage({
             <p className="settings__cap-title">数据存储与溯源</p>
             <p className="settings__cap-desc">
               按时间段与设备名称检索报警记录，并可查看异常分析窗口与当时的图像数据。
-            </p>
-          </div>
-        </div>
-
-        <SectionTitle>规划能力</SectionTitle>
-        <div className="settings__caps">
-          <div className="settings__cap settings__cap--planned">
-            <Badge tone="info">规划中</Badge>
-            <p className="settings__cap-title">杂质检测与自动分拣</p>
-            <p className="settings__cap-desc">
-              待摄像头精度与算力提升后，由视觉模型识别杂质并定位，联动机械臂 / 分拣设备转移至人工复核线。
-              当前为规划能力，平台不将其标注为已部署。
-            </p>
-          </div>
-          <div className="settings__cap settings__cap--planned">
-            <Badge tone="info">规划中</Badge>
-            <p className="settings__cap-title">时序预测模型升级</p>
-            <p className="settings__cap-desc">
-              引入 LSTM 时序异常预测与多目标跟踪、场景理解算法，进一步提升提前预警的准确率。
-            </p>
-          </div>
-          <div className="settings__cap settings__cap--planned">
-            <Badge tone="info">推广方向</Badge>
-            <p className="settings__cap-title">跨行业推广</p>
-            <p className="settings__cap-desc">
-              视觉 + 雷达融合方案可推广至食品加工、医药生产、化工原料处理等连续物料生产线。
             </p>
           </div>
         </div>
