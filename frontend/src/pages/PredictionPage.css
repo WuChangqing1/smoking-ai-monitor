@@ -209,6 +209,12 @@
    相似历史事件
    ========================================================================== */
 
+/* 本卡与「预警依据」同一行，卡高由后者决定，列表撑满后各条均分剩余高度 */
+.predict__similar-body {
+  display: flex;
+  flex-direction: column;
+}
+
 .predict__similar {
   list-style: none;
   margin: 0;
@@ -216,9 +222,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
+  flex: 1;
 }
 
 .predict__similar-item {
+  display: flex;
+  flex-direction: column;
   padding: var(--sp-3);
   border: 1px solid var(--c-border);
   border-radius: var(--r-sm);
@@ -246,7 +255,7 @@
 }
 
 .predict__similar-result {
-  margin-top: 5px;
+  margin-top: auto;
   padding-top: 5px;
   border-top: 1px dashed var(--c-border);
   font-size: var(--fs-sm);

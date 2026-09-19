@@ -377,6 +377,7 @@ export default function OverviewPage({
         <Panel
           title="雷视联动判断"
           icon={<IconRadar size={14} />}
+          bodyClassName="overview__fusion-body"
           extra={
             <button type="button" className="overview__link" onClick={() => onNavigate('fusion')}>
               进入雷视联动

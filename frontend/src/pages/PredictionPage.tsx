@@ -252,6 +252,7 @@ export default function PredictionPage() {
         <Panel
           title="相似历史事件"
           icon={<IconKnowledge size={14} />}
+          bodyClassName="predict__similar-body"
           extra={
             <button
               type="button"
