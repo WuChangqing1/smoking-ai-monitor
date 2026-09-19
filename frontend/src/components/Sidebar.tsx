@@ -81,12 +81,6 @@ export default function Sidebar({
           <span className={`sidebar__collapse-arrow${collapsed ? ' is-collapsed' : ''}`}>‹</span>
           {!collapsed && <span>收起导航</span>}
         </button>
-        {!collapsed && (
-          <p className="sidebar__version">
-            <span className="sidebar__version-dot" aria-hidden="true" />
-            数据实时刷新 · {new Date().getFullYear()}
-          </p>
-        )}
       </div>
     </aside>
   )

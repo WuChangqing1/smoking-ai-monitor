@@ -222,8 +222,7 @@ export default function SettingsPage({
             </span>
             <span className="settings__mode-desc">
               监控画面与各项数值严格同步：画面中物料逐渐堆积时，雷达测距、物料覆盖率、
-              风险指数与联合判断同步变化。为便于现场连续展示，时间轴经过压缩，
-              用于呈现真实系统中可能跨越更长时间发生的趋势。
+              风险指数与联合判断同步变化。
             </span>
           </button>
 

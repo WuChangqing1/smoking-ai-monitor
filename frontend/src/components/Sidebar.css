@@ -176,33 +176,13 @@
   transform: rotate(180deg);
 }
 
-.sidebar__version {
-  margin-top: 6px;
-  text-align: center;
-  font-size: var(--fs-xs);
-  color: #6b7b81;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.sidebar__version-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--c-normal);
-  flex-shrink: 0;
-}
-
 @media (max-width: 1040px) {
   .sidebar {
     width: var(--w-sidebar-collapsed);
   }
   .sidebar .sidebar__label,
   .sidebar .sidebar__group-title,
-  .sidebar .sidebar__collapse span:last-child,
-  .sidebar .sidebar__version {
+  .sidebar .sidebar__collapse span:last-child {
     display: none;
   }
   .sidebar .sidebar__item {

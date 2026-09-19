@@ -110,8 +110,19 @@ export default function VideoPage({ meta }: VideoPageProps) {
         <div className="video-page__side">
           <Panel title="监控点概览" icon={<IconVideo size={14} />}>
             <MetricList>
-              <MetricRow label="监控点总数" value={meta?.monitor_points ?? 7} unit="个" />
-              <MetricRow label="已接入画面" value={1} unit="路" tone="normal" />
+              <MetricRow
+                label="已接入画面"
+                value={POINTS.length}
+                unit="路"
+                tone="normal"
+                hint="Camera 01~04 均已接入现场画面，按 0.5× 循环播放"
+              />
+              <MetricRow
+                label="其中带异常检测"
+                value={POINTS.filter((p) => p.kind === '雷达 + 视觉').length}
+                unit="路"
+                hint="同时具备雷达与视觉的点位做联合判断，其余做单独判断"
+              />
               <MetricRow label="摄像机" value={meta?.devices.camera ?? 15} unit="台" />
               <MetricRow label="激光雷达" value={meta?.devices.radar ?? 3} unit="台" />
               <MetricRow

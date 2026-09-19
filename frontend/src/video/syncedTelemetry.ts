@@ -385,10 +385,7 @@ export function buildSyncedPrediction(
       { source: 'radar' as const, text: STATE_SUMMARY[telemetry.sim_state] },
       ...evidence,
     ],
-    suggestions: [
-      ...suggestions,
-      '说明：画面同步模式的时间轴经过压缩，用于呈现真实系统中可能跨越更长时间发生的趋势；预测表达的是"在当前趋势持续条件下"的风险走向。',
-    ],
+    suggestions: [...suggestions],
     similar_events: similarEvents,
     curve,
   }
