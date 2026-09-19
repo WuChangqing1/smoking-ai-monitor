@@ -160,7 +160,6 @@ export default function PredictionPage() {
         <Panel
           title="当前风险"
           icon={<IconRadar size={14} />}
-          description="基于最近实测数据"
         >
           <div className="predict__big">
             <span className={`predict__big-value is-${LEVEL_TONE[current.level]}`}>
@@ -184,7 +183,6 @@ export default function PredictionPage() {
         <Panel
           title="预测风险"
           icon={<IconPredict size={14} />}
-          description="趋势外推 + 状态机权重"
           tone={LEVEL_TONE[forecast.level] === 'critical' ? 'critical' : 'primary'}
         >
           <div className="predict__big">
@@ -231,7 +229,6 @@ export default function PredictionPage() {
         <Panel
           title="预警依据"
           icon={<IconInfo size={14} />}
-          description="每条依据都由当前实测数据计算得出"
         >
           <ul className="predict__evidence">
             {evidence.map((item, index) => (
@@ -255,7 +252,6 @@ export default function PredictionPage() {
         <Panel
           title="相似历史事件"
           icon={<IconKnowledge size={14} />}
-          description="按当前特征与历史前兆模式的接近程度排序"
           extra={
             <button
               type="button"

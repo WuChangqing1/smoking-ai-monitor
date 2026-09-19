@@ -306,7 +306,6 @@ export default function FusionPage({ realtime, realtimeError }: FusionPageProps)
         <Panel
           title="堆积风险趋势"
           icon={<IconChart size={14} />}
-          description="由雷达测距、视觉覆盖率与输送速度联合计算"
           extra={<Badge tone={LEVEL_TONE[risk.level]}>{risk.index.toFixed(1)}% {risk.level_text}</Badge>}
         >
           <Chart option={riskOption} height={200} pointCount={samples.length} emptyText="暂无风险数据" />
