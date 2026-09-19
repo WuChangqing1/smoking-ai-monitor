@@ -292,15 +292,12 @@ export default function PredictionPage() {
           )}
         </Panel>
       </div>
+
       {/* ================= AI 辅助分析 =================
           只在预警 / 报警阶段出现；正常与关注阶段不请求模型。
           同一阶段重复进入会复用后端缓存，不会重复消耗 Token。 */}
       {analyzableStage && (
-        <Panel
-          title="AI 辅助分析"
-          icon={<IconInfo size={14} />}
-          description="结合历史异常知识库生成，仅供参考"
-        >
+        <Panel title="AI 辅助分析" icon={<IconInfo size={14} />}>
           <AIAnalysisPanel
             analysis={aiAnalysis}
             loading={aiLoading}

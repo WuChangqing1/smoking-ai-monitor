@@ -203,31 +203,14 @@
   color: var(--c-text);
 }
 
-.settings__mode-desc {
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
-  line-height: 1.75;
-}
-
 /* ==========================================================================
    工况设定
    ========================================================================== */
-
-.settings__demo-hint {
-  font-size: var(--fs-base);
-  color: var(--c-text-sub);
-  line-height: 1.8;
-}
-
-.settings__demo-hint strong {
-  color: var(--c-text);
-}
 
 .settings__scenarios {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--sp-3);
-  margin-top: var(--sp-4);
 }
 
 .settings__scenario {

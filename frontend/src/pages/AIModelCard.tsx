@@ -190,7 +190,6 @@ export default function AIModelCard() {
       className="panel--wide"
       title="AI 模型服务"
       icon={<IconSettings size={14} />}
-      description="用于预警与报警的辅助分析，不参与报警等级判定"
       extra={
         <Badge tone={statusBadge.tone} dot>
           {statusBadge.text}
@@ -320,42 +319,33 @@ export default function AIModelCard() {
             </label>
           </div>
 
-          {/* 操作区与说明并排：整宽卡片下这块不再单独占一大行，
-              视觉上更紧凑，也避免右侧列尾留白 */}
-          <div className="ai-model__foot">
-            <div className="ai-model__actions">
-              <button
-                type="button"
-                className="ai-model__btn ai-model__btn--primary"
-                onClick={handleSave}
-                disabled={busy !== null}
-              >
-                {busy === 'save' ? '正在保存…' : '保存配置'}
-              </button>
+          <div className="ai-model__actions">
+            <button
+              type="button"
+              className="ai-model__btn ai-model__btn--primary"
+              onClick={handleSave}
+              disabled={busy !== null}
+            >
+              {busy === 'save' ? '正在保存…' : '保存配置'}
+            </button>
+            <button
+              type="button"
+              className="ai-model__btn"
+              onClick={handleTest}
+              disabled={busy !== null}
+            >
+              {busy === 'test' ? '正在测试…' : '测试连接'}
+            </button>
+            {settings?.api_key_configured && (
               <button
                 type="button"
                 className="ai-model__btn"
-                onClick={handleTest}
+                onClick={handleClearKey}
                 disabled={busy !== null}
               >
-                {busy === 'test' ? '正在测试…' : '测试连接'}
+                清除 API Key
               </button>
-              {settings?.api_key_configured && (
-                <button
-                  type="button"
-                  className="ai-model__btn"
-                  onClick={handleClearKey}
-                  disabled={busy !== null}
-                >
-                  清除 API Key
-                </button>
-              )}
-            </div>
-
-            <p className="ai-model__hint">
-              模型请求由后端发出：本地开发填写本机推理服务地址，
-              云端部署填写服务器可访问的地址。
-            </p>
+            )}
           </div>
 
           {feedback && (

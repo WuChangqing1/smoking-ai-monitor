@@ -6,35 +6,21 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-  /* 与同行卡片等高时，内容区撑满，避免底部留白显得松散 */
-  flex: 1;
 }
 
 .ai-model__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sp-3);
-  /* 表单本身按内容高度排布，不跟着卡片一起被拉开 */
+  /* 表单按内容高度排布 */
   align-content: start;
 }
 
+/* 读取配置中的提示（仅加载态，不是说明文案） */
 .ai-model__hint {
-  margin-top: auto;
-}
-
-/* ---- 底部操作区与说明并排 ---- */
-.ai-model__foot {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--sp-3) var(--sp-4);
-  align-items: center;
-  margin-top: var(--sp-2);
-  padding-top: var(--sp-3);
-  border-top: 1px dashed var(--c-border);
-}
-
-.ai-model__foot .ai-model__hint {
-  margin-top: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+  line-height: 1.7;
 }
 
 .ai-model__field {
@@ -135,12 +121,6 @@
   color: var(--c-critical);
   background: var(--c-critical-bg);
   border-left: 3px solid var(--c-critical);
-}
-
-.ai-model__hint {
-  font-size: var(--fs-sm);
-  color: var(--c-text-muted);
-  line-height: 1.7;
 }
 
 @media (max-width: 1100px) {

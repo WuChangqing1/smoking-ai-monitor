@@ -206,11 +206,7 @@ export default function SettingsPage({
       </div>
 
       {/* ---- 运行模式 ---- */}
-      <Panel
-        title="运行模式"
-        icon={<IconSettings size={14} />}
-        description="平台支持两种运行方式，现场展示默认使用画面同步"
-      >
+      <Panel title="运行模式" icon={<IconSettings size={14} />}>
         <div className="settings__modes">
           <button
             type="button"
@@ -222,10 +218,6 @@ export default function SettingsPage({
               <Badge tone={runMode === 'video_sync' ? 'primary' : 'idle'}>
                 {runMode === 'video_sync' ? '当前使用' : '可切换'}
               </Badge>
-            </span>
-            <span className="settings__mode-desc">
-              监控画面与各项数值严格同步：画面中物料逐渐堆积时，雷达测距、物料覆盖率、
-              风险指数与联合判断同步变化。
             </span>
           </button>
 
@@ -240,27 +232,13 @@ export default function SettingsPage({
                 {runMode === 'automatic' ? '当前使用' : '可切换'}
               </Badge>
             </span>
-            <span className="settings__mode-desc">
-              由平台按工业逻辑持续演化工况并自动生成预警与报警记录，
-              用于系统逻辑验证、阈值调试与功能检查。切换到此模式后，
-              页面数值不再跟随画面，而由平台工况循环决定。
-            </span>
           </button>
         </div>
       </Panel>
 
-      {/* ---- 工况设定（现场联调 / 应急演练时手动指定工况） ---- */}
-      <Panel
-        title="工况设定"
-        icon={<IconSettings size={14} />}
-        description="手动指定当前运行工况，用于现场联调、阈值校验与应急演练"
-      >
+      {/* ---- 工况设定 ---- */}
+      <Panel title="工况设定" icon={<IconSettings size={14} />}>
         <div className="settings__demo">
-          <p className="settings__demo-hint">
-            系统默认按自动工况循环运行，<strong>大部分时间保持正常</strong>，报警不频繁。
-            联调或演练需要复现特定工况时，可在此手动指定；点击「恢复自动工况」退出。
-          </p>
-
           <div className="settings__scenarios">
             {SCENARIOS.map((item) => (
               <button
