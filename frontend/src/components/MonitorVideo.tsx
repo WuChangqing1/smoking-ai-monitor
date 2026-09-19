@@ -278,9 +278,7 @@ export default function MonitorVideo({
            仅在 warning 及以上阶段渲染；循环回到 normal 时自然消失 */}
       {visible !== 'none' && <DetectionOverlay box={detectionBox} />}
 
-      {/* ---- 轻量叠加信息，不堆遮罩 ----
-           机位标识放在右下角：视频素材已去除自带的机位水印，因此由前端叠加，
-           样式与原来的水印接近（小、半透明底色），normal 阶段也始终可见。 */}
+      {/* ---- 轻量叠加信息，不堆遮罩 ---- */}
       {showTimestamp && visible !== 'none' && (
         <span className="monitor-video__timestamp">{timestamp ?? '----年--月--日 --:--:--'}</span>
       )}

@@ -76,7 +76,7 @@ export function MetricRow({
   )
 }
 
-/** 指标列表容器。`className` 可选，便于某个页面改成横向铺开的排布。 */
+/** 指标列表容器。`className` 可选，用于覆盖默认的纵向排布。 */
 export function MetricList({
   children,
   className = '',

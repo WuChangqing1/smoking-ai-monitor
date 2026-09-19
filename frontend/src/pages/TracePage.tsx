@@ -187,9 +187,7 @@ export default function TracePage() {
         </div>
       )}
 
-      {/* ---- 汇总 ----
-           整宽展示，4 项指标横向铺开 ——
-           原先放在 grid--2 里但只放一张卡，右半边整片空白。 */}
+      {/* ---- 汇总：整宽展示，4 项指标横向铺开 ---- */}
       <Panel
         title="检索结果汇总"
         icon={<IconTrace size={14} />}
