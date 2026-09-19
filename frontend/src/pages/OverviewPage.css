@@ -151,7 +151,8 @@
 
 /*
  * 本卡与「设备状态概览」同一行，行高由后者决定，卡高因此大于内容高度。
- * 正文撑满后把结论条按到卡片底边，剩余空间落在正文之间。
+ * 正文区正常取高（两列读数贴在一起，不互相拉开），
+ * 多出来的高度集中留在结论条上方，由结论条贴住卡片底边。
  */
 .overview__fusion-body {
   display: flex;
@@ -162,8 +163,6 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sp-5);
-  align-content: space-between;
-  flex: 1;
 }
 
 .overview__fusion-verdict {
@@ -198,7 +197,7 @@
 }
 
 .overview__fusion-reason {
-  margin-top: var(--sp-3);
+  margin-top: auto;
   padding: var(--sp-3);
   border-radius: var(--r-sm);
   background: var(--c-surface-alt);
