@@ -365,9 +365,6 @@ export default function FusionPage({ realtime, realtimeError }: FusionPageProps)
               <li className="is-pro">两者一致时结论更可靠</li>
               <li className="is-pro">两者分歧时降级为「关注」并说明原因</li>
             </ul>
-            <p className="fusion__compare-foot">
-              注：融合的目标不是用大模型替代传感器，而是让各自的优势互补。
-            </p>
           </div>
         </div>
       </Panel>

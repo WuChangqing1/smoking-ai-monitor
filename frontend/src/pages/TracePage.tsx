@@ -13,7 +13,7 @@ import Panel from '../components/Panel'
 import FilterBar, { type FilterField } from '../components/FilterBar'
 import AlarmDetailModal from '../components/AlarmDetailModal'
 import { Badge, EmptyState, MetricList, MetricRow, Skeleton } from '../components/Badge'
-import { IconDevice, IconTrace } from '../components/icons'
+import { IconTrace } from '../components/icons'
 import { api } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
 import type { AlarmDetail, AlarmLevel, TraceQuery } from '../types'
@@ -206,24 +206,6 @@ export default function TracePage() {
               hint="当前页记录中的最小雷达测距，接近 0.58 m 报警阈值即代表发生过堵料"
             />
           </MetricList>
-        </Panel>
-
-        <Panel
-          title="溯源说明"
-          icon={<IconDevice size={14} />}
-          description="历史事件的检索与回溯"
-        >
-          <p className="trace__note">
-            本页对应原系统的历史查询能力（按时间段、设备名称查询报警内容），
-            并扩展了异常类型、报警等级与处理状态三个维度。
-          </p>
-          <p className="trace__note">
-            每条记录都保留处理过程记录，点击任意一行可查看当时的监控画面、
-            雷达数据走向与 AI 判断结果。
-          </p>
-          <p className="trace__note trace__note--muted">
-            报警内容口径：设备名称 + 设备 IP + 报警时间 + 距离信息。
-          </p>
         </Panel>
       </div>
 

@@ -245,11 +245,6 @@ export default function SettingsPage({
             </span>
           </button>
         </div>
-
-        <p className="settings__mode-note">
-          提示：若现场监控视频暂不可用，平台会自动回退到静态监控画面，
-          并继续使用平台工况数据，不会出现空白或报错。
-        </p>
       </Panel>
 
       {/* ---- 工况设定（现场联调 / 应急演练时手动指定工况） ---- */}

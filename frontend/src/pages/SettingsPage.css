@@ -182,17 +182,6 @@
   line-height: 1.75;
 }
 
-.settings__mode-note {
-  margin-top: var(--sp-3);
-  padding: var(--sp-3);
-  border-radius: var(--r-sm);
-  background: var(--c-info-bg);
-  border-left: 3px solid var(--c-info);
-  font-size: var(--fs-sm);
-  color: var(--c-info);
-  line-height: 1.75;
-}
-
 /* ==========================================================================
    工况设定
    ========================================================================== */

@@ -23,27 +23,6 @@
   font-size: var(--fs-sm);
 }
 
-.trace__note {
-  font-size: var(--fs-base);
-  color: var(--c-text-sub);
-  line-height: 1.85;
-}
-
-.trace__note + .trace__note {
-  margin-top: var(--sp-3);
-}
-
-.trace__note strong {
-  color: var(--c-text);
-}
-
-.trace__note--muted {
-  padding-top: var(--sp-3);
-  border-top: 1px dashed var(--c-border);
-  font-size: var(--fs-sm);
-  color: var(--c-text-muted);
-}
-
 /* ---- 骨架 ---- */
 .trace__loading {
   display: flex;
