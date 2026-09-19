@@ -181,8 +181,7 @@ export default function PredictionPage() {
 
         <p className="predict__disclaimer">
           <IconInfo size={12} />
-          预测为概率性判断，存在不确定性。系统输出"风险升高 / 建议关注 / 建议检查"等提示，
-          不会给出"多久之后一定堵料"这类确定性结论。
+          预测为概率性判断，存在不确定性
         </p>
       </Panel>
 
