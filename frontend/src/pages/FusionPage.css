@@ -1,6 +1,7 @@
 /* ==========================================================================
    雷视联动页
-   左＝视频 / 中＝雷达分析 / 右＝视觉 AI + 联合判定 / 下＝趋势 + 技术解释
+   上＝现场画面 / 雷达分析 / 视觉 AI / 联合判定（2×2）
+   下＝两条趋势曲线
    ========================================================================== */
 
 .fusion {
@@ -10,9 +11,17 @@
   min-width: 0;
 }
 
-.fusion__top {
+/*
+ * 上部 2×2：现场画面 | 雷达分析
+ *          视觉 AI | 联合判定
+ *
+ * 左列 36%：视频容器固定 16:9，卡高由列宽决定，此比例下与右侧
+ * 「雷达分析」等高。
+ * align-items: start 让每张卡按自身内容取高，不被同行拉出内部空白。
+ */
+.fusion__grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(0, 36%) minmax(0, 1fr);
   gap: var(--sp-4);
   align-items: start;
   min-width: 0;
@@ -22,11 +31,12 @@
   padding: var(--sp-3);
 }
 
-.fusion__right {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  min-width: 0;
+/* 视觉 AI 的 4 项指标排成两列，填满卡片高度 */
+.fusion__vision-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--sp-4);
+  align-content: start;
 }
 
 /* ---- 大号读数 ---- */
@@ -122,6 +132,16 @@
 /* ==========================================================================
    联合判定区
    ========================================================================== */
+
+/*
+ * 本卡与「雷达分析」同一行，行高由后者决定，卡高因此大于内容高度。
+ * 用整列弹性布局把底部状态行按到卡片底边，剩余空间落在正文之后，
+ * 而不是把状态行留在半空中、下方空一截。
+ */
+.fusion__verdict-body {
+  display: flex;
+  flex-direction: column;
+}
 
 .fusion__formula {
   display: flex;
@@ -239,7 +259,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--sp-3);
-  margin-top: var(--sp-3);
+  margin-top: auto;
   padding-top: var(--sp-3);
   border-top: 1px solid var(--c-border);
 }
@@ -253,17 +273,8 @@
    响应式
    ========================================================================== */
 
-@media (max-width: 1560px) {
-  .fusion__top {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  .fusion__top > :first-child {
-    grid-column: 1 / -1;
-  }
-}
-
 @media (max-width: 1100px) {
-  .fusion__top {
+  .fusion__grid {
     grid-template-columns: minmax(0, 1fr);
   }
   .fusion__spec-list {
