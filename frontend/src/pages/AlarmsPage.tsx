@@ -17,6 +17,7 @@ import { Badge, EmptyState, Skeleton } from '../components/Badge'
 import { IconAlarm, IconRefresh } from '../components/icons'
 import { api } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
+import { useVideoSync } from '../video/VideoSyncContext'
 import type { AlarmDetail, AlarmLevel, TraceQuery } from '../types'
 import './AlarmsPage.css'
 
@@ -67,21 +68,34 @@ export default function AlarmsPage() {
 
   const list = useFetch(() => api.alarms(listQuery), { intervalMs: 3000 })
 
-  const allItems = list.data?.items ?? []
-  const items = useMemo(
-    () =>
-      tab === 'current'
-        ? allItems.filter((a) => a.status === 'pending' || a.status === 'processing')
-        : allItems,
-    [allItems, tab],
-  )
+  const sync = useVideoSync()
+  /**
+   * 当前画面的临时报警（视频同步模式下进入预警/异常阶段时存在）。
+   * 与侧栏角标同源，因此角标数字与本列表条数必然一致。
+   * 该记录不写入任何存储，画面回到正常阶段即消失。
+   */
+  const liveAlarm =
+    sync?.runMode === 'video_sync' && sync.available ? sync.currentAlarm : null
 
-  // 详情按需加载
+  const allItems = list.data?.items ?? []
+  const items = useMemo(() => {
+    if (tab !== 'current') return allItems
+    const pending = allItems.filter((a) => a.status === 'pending' || a.status === 'processing')
+    return liveAlarm ? [liveAlarm.record, ...pending] : pending
+  }, [allItems, tab, liveAlarm])
+
+  // 详情按需加载；临时报警直接用派生好的详情，不走接口（它并不存在于后端）
   const detailFetcher = useCallback(
     () => (detailId ? api.alarmDetail(detailId) : Promise.resolve(null)),
     [detailId],
   )
-  const detailState = useFetch<AlarmDetail | null>(detailFetcher, { enabled: detailId !== null })
+  const fetchedDetail = useFetch<AlarmDetail | null>(detailFetcher, {
+    enabled: detailId !== null && detailId !== liveAlarm?.record.id,
+  })
+  const detailState =
+    liveAlarm && detailId === liveAlarm.record.id
+      ? { data: liveAlarm.detail, loading: false, error: null }
+      : fetchedDetail
 
   const riskLikeLevels = options.data?.levels ?? []
   const statusOptions = options.data?.statuses ?? []
@@ -228,7 +242,7 @@ export default function AlarmsPage() {
             title={tab === 'current' ? '当前没有未处置报警' : '没有符合条件的报警记录'}
             description={
               tab === 'current'
-                ? '系统运行正常。报警产生后会自动出现在这里，并记录处理过程。'
+                ? '所有报警均已处置并归档，可在「历史报警」中查看完整记录。'
                 : '可以调整筛选条件后重试。'
             }
           />

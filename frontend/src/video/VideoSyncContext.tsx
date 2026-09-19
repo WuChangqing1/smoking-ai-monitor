@@ -43,6 +43,8 @@ import {
   resolveDetectionBoxForRisk,
   type DetectionBox,
 } from './videoDetection'
+import { buildCurrentAlarm } from './syncedTelemetry'
+import type { AlarmDetail, AlarmRecord } from '../types'
 
 export type RunMode = 'automatic' | 'video_sync'
 
@@ -79,6 +81,13 @@ export interface VideoSyncContextValue extends VideoSyncState {
    * 由主监控点的遥测派生 —— 全站同一个框，页面不得自行解算。
    */
   detection: DetectionBox
+  /**
+   * 当前报警（临时，由画面状态实时派生）。
+   *
+   * 画面进入预警/异常阶段时非 null，回到正常阶段自然消失。
+   * **不写入任何存储** —— 视频每约 20 秒循环一次，落库会让历史记录失去可信度。
+   */
+  currentAlarm: { record: AlarmRecord; detail: AlarmDetail } | null
 }
 
 const VideoSyncContext = createContext<VideoSyncContextValue | null>(null)
@@ -191,6 +200,19 @@ export function VideoSyncProvider({
     [telemetry.risk_index],
   )
 
+  /**
+   * 当前报警：与 telemetry 同源，因此「当前报警」列表、侧栏角标、
+   * 首页状态展示必然一致。
+   *
+   * 只在真正进入报警阶段时重建（依赖 sim_state 而非逐帧的 currentTime），
+   * 避免每帧刷新导致列表跳动；报警编号随阶段与时间点变化。
+   */
+  const currentAlarm = useMemo(
+    () => buildCurrentAlarm(telemetry, trend),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [telemetry.sim_state, Math.round(telemetry.t)],
+  )
+
   const value = useMemo<VideoSyncContextValue>(
     () => ({
       currentTime,
@@ -206,6 +228,7 @@ export function VideoSyncProvider({
       telemetry,
       trend,
       detection,
+      currentAlarm,
     }),
     [
       currentTime,
@@ -220,6 +243,7 @@ export function VideoSyncProvider({
       telemetry,
       trend,
       detection,
+      currentAlarm,
     ],
   )
 

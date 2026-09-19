@@ -21,7 +21,14 @@ import {
   applyTelemetryToStatus,
   toSyncedSnapshot,
 } from '../video/syncedTelemetry'
-import type { Device, PlatformMeta, RealtimeSnapshot, SystemStatus } from '../types'
+import type {
+  AlarmRecord,
+  Device,
+  Paged,
+  PlatformMeta,
+  RealtimeSnapshot,
+  SystemStatus,
+} from '../types'
 import OverviewPage from '../pages/OverviewPage'
 import VideoPage from '../pages/VideoPage'
 import FusionPage from '../pages/FusionPage'
@@ -62,6 +69,18 @@ function AppShell({ meta }: { meta: ReturnType<typeof useFetch<PlatformMeta>> })
     intervalMs: REALTIME_POLL_MS,
   })
   const devices = useFetch<Device[]>(api.devices, {})
+
+  /**
+   * 报警记录：侧栏角标与「异常报警」页共用这一份数据。
+   *
+   * 之前角标取的是 `status.today_warnings`（今日发生的预警+严重报警**条数**，
+   * 与是否已处置无关），而报警页的「当前报警」列的是**未处置**记录 ——
+   * 两个口径不同，导致角标显示 1 但点进去是空的。
+   * 现在统一为「未处置报警数」，角标与页面必然一致。
+   */
+  const alarms = useFetch<Paged<AlarmRecord>>(() => api.alarms({ page_size: 100 }), {
+    intervalMs: STATUS_POLL_MS,
+  })
 
   const offline = Boolean(status.error) && status.data === null && !syncActive
 
@@ -111,11 +130,23 @@ function AppShell({ meta }: { meta: ReturnType<typeof useFetch<PlatformMeta>> })
     [sync, status, realtime],
   )
 
-  // 侧栏角标：当前报警数量（后端未就绪时不显示）
+  /**
+   * 侧栏角标：未处置报警数。
+   *
+   * 口径与「异常报警 → 当前报警」列表完全一致：
+   *   * 后端返回的未处置记录（pending / processing）
+   *   * 加当前画面派生的临时报警（视频同步模式下进入预警/异常阶段时存在）
+   * 角标为 0 时不显示 —— 避免出现「角标有数字、点进去却没有内容」的矛盾。
+   */
+  const liveAlarm = sync?.runMode === 'video_sync' && sync.available ? sync.currentAlarm : null
+
   const badges = useMemo(() => {
-    const pending = effectiveStatus?.today_warnings
-    return pending && pending > 0 ? { alarms: pending } : {}
-  }, [effectiveStatus?.today_warnings])
+    const items = alarms.data?.items ?? []
+    const pending =
+      items.filter((a) => a.status === 'pending' || a.status === 'processing').length +
+      (liveAlarm ? 1 : 0)
+    return pending > 0 ? { alarms: pending } : {}
+  }, [alarms.data, liveAlarm])
 
   const pages: Record<PageId, JSX.Element> = {
     overview: (

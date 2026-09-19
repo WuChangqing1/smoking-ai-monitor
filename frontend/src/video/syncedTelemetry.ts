@@ -11,6 +11,9 @@
  */
 
 import type {
+  AlarmDetail,
+  AlarmLevel,
+  AlarmRecord,
   FusionVerdict,
   MonitorPoint,
   Prediction,
@@ -410,6 +413,119 @@ function saturate(value: number, limit: number): number {
 
 function clamp(value: number, low: number, high: number): number {
   return Math.max(low, Math.min(high, value))
+}
+
+/* ==========================================================================
+   当前报警（临时，由画面状态实时派生）
+   ========================================================================== */
+
+/** 风险阶段 → 报警等级：关注/预警 → 预警级，异常 → 严重级 */
+function levelOfState(state: SimState): AlarmLevel {
+  return state === 'alarm' ? 'critical' : 'warning'
+}
+
+function hhmmss(date: Date): string {
+  return date.toLocaleTimeString('zh-CN', { hour12: false })
+}
+
+/**
+ * 由当前遥测派生「当前报警」记录。
+ *
+ * **不写入任何存储** —— 这是视频同步模式下的临时报警：
+ * 视频每约 20 秒循环一次，若每轮落库会让历史记录迅速失去可信度。
+ * 画面回到正常阶段时该记录自然消失，历史报警继续由后端提供。
+ *
+ * 返回 null 表示当前处于 normal / attention，尚未构成报警。
+ */
+export function buildCurrentAlarm(
+  telemetry: VideoTelemetry,
+  trend: VideoTelemetry[] = [],
+  opts: { now?: Date } = {},
+): { record: AlarmRecord; detail: AlarmDetail } | null {
+  if (telemetry.sim_state !== 'warning' && telemetry.sim_state !== 'alarm') return null
+
+  const level = levelOfState(telemetry.sim_state)
+  const now = opts.now ?? new Date()
+  const ts = Math.floor(now.getTime() / 1000)
+  const code = `LIVE-${telemetry.t.toFixed(1).replace('.', '')}`
+
+  const record: AlarmRecord = {
+    id: code,
+    code,
+    ts,
+    device_id: PRIMARY_POINT.device_id ?? 'RAD-02',
+    device_name: '制丝线 2 号工位雷达',
+    device_ip: PRIMARY_POINT.device_ip ?? '192.168.1.198',
+    location: PRIMARY_POINT.name,
+    event_type: 'material_accumulation',
+    event_type_text: '物料堆积',
+    level,
+    level_text: level === 'critical' ? '严重' : '预警',
+    radar_value: telemetry.distance,
+    vision_result: telemetry.vision_label_text,
+    fusion_result: telemetry.fusion_verdict_text,
+    status: 'pending',
+    status_text: '未处置',
+    risk_index: telemetry.risk_index,
+  }
+
+  const detail: AlarmDetail = {
+    ...record,
+    baseline_distance: telemetry.baseline_distance,
+    snapshot: 'images/main-monitor-fallback.png',
+    evidence_image: 'images/evidence/main-camera-material-accumulation.jpg',
+    evidence_note: '视觉模型检测到物料堆积异常区域，系统已生成带框截图供现场人员复核。',
+    /* 趋势图用本轮已走过的轨迹，与首页、雷视联动同源 */
+    radar_trend: trend.map((x) => ({
+      ts: String(x.t),
+      label: `${x.t.toFixed(1)}s`,
+      sim_state: x.sim_state,
+      radar_distance: x.distance,
+      radar_filtered: x.distance,
+      risk_index: x.risk_index,
+      vision_coverage: x.coverage,
+      vision_confidence: x.vision_confidence,
+      conveyor_speed: x.conveyor_speed,
+      temperature: x.temperature,
+      humidity: x.humidity,
+    })),
+    ai_analysis: {
+      vision_label: telemetry.vision_label_text,
+      confidence: telemetry.vision_confidence,
+      coverage: telemetry.coverage,
+      note:
+        `视觉模型输出为概率结果，本次置信度 ${(telemetry.vision_confidence * 100).toFixed(1)}%，` +
+        `物料覆盖率 ${(telemetry.coverage * 100).toFixed(1)}%；` +
+        `测距 ${telemetry.distance.toFixed(2)} m 相对基准 ` +
+        `${telemetry.baseline_distance.toFixed(2)} m 变化 ` +
+        `${(telemetry.distance - telemetry.baseline_distance).toFixed(2)} m。`,
+    },
+    /* 处理过程：只写到「报警」为止，后续等待现场处置 */
+    timeline: [
+      {
+        ts: hhmmss(now),
+        stage: '发现',
+        title: '视觉模型识别到物料堆积',
+        detail: `视觉类别 ${telemetry.vision_label_text}，物料覆盖率 ${(telemetry.coverage * 100).toFixed(1)}%`,
+      },
+      {
+        ts: hhmmss(now),
+        stage: '判断',
+        title: '雷达测距联合确认',
+        detail: `测距 ${telemetry.distance.toFixed(3)} m，较基准 ${telemetry.baseline_distance.toFixed(2)} m 下降 ${Math.abs(telemetry.delta).toFixed(3)} m`,
+      },
+      {
+        ts: hhmmss(now),
+        stage: '报警',
+        title: level === 'critical' ? '触发严重级报警' : '触发预警级报警',
+        detail: `风险指数 ${telemetry.risk_index.toFixed(1)}%，联合判断${telemetry.fusion_verdict_text}`,
+      },
+    ],
+    operator: '待处置',
+    resolution: '',
+  }
+
+  return { record, detail }
 }
 
 export { CONVEYOR_BASE_SPEED, VIDEO_PLAYBACK_RATE }
